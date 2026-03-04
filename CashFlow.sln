@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CashFlow.AppHost", "src\CashFlow.AppHost\CashFlow.AppHost.csproj", "{36A12D56-2FE9-4166-9FB1-FA00DA3DCFE9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CashFlow.ServiceDefaults", "src\CashFlow.ServiceDefaults\CashFlow.ServiceDefaults.csproj", "{E1A9A1E4-F4D0-4F40-87D8-9B6888A6FB08}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Aspire", "Aspire", "{9611D6BB-B983-47C9-A5C6-F47A68B4A2F9}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{36A12D56-2FE9-4166-9FB1-FA00DA3DCFE9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{36A12D56-2FE9-4166-9FB1-FA00DA3DCFE9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{36A12D56-2FE9-4166-9FB1-FA00DA3DCFE9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{36A12D56-2FE9-4166-9FB1-FA00DA3DCFE9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E1A9A1E4-F4D0-4F40-87D8-9B6888A6FB08}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E1A9A1E4-F4D0-4F40-87D8-9B6888A6FB08}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E1A9A1E4-F4D0-4F40-87D8-9B6888A6FB08}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E1A9A1E4-F4D0-4F40-87D8-9B6888A6FB08}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{36A12D56-2FE9-4166-9FB1-FA00DA3DCFE9} = {9611D6BB-B983-47C9-A5C6-F47A68B4A2F9}
+		{E1A9A1E4-F4D0-4F40-87D8-9B6888A6FB08} = {9611D6BB-B983-47C9-A5C6-F47A68B4A2F9}
+	EndGlobalSection
+EndGlobal
