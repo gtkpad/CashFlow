@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <ItemGroup>
+    <ProjectReference Include="..\CashFlow.ServiceDefaults\CashFlow.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\CashFlow.Domain\CashFlow.Domain.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" PrivateAssets="all" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+    <PackageReference Include="MassTransit" />
+    <PackageReference Include="MassTransit.EntityFrameworkCore" />
+    <PackageReference Include="MassTransit.RabbitMQ" />
+    <PackageReference Include="Carter" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+    <PackageReference Include="FluentValidation" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
+    <PackageReference Include="Aspire.Npgsql.EntityFrameworkCore.PostgreSQL" />
+    <PackageReference Include="Aspire.RabbitMQ.Client" />
+  </ItemGroup>
+
+</Project>
