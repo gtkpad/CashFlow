@@ -8,6 +8,14 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Aspire", "Aspire", "{9611D6
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CashFlow.Domain", "src\CashFlow.Domain\CashFlow.Domain.csproj", "{F7C8F7F9-3DF8-43D2-AB4E-28176FDBB888}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CashFlow.Transactions.API", "src\CashFlow.Transactions.API\CashFlow.Transactions.API.csproj", "{E2D95EC0-6B1A-4B94-9F38-292952DEC1E6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CashFlow.Consolidation.API", "src\CashFlow.Consolidation.API\CashFlow.Consolidation.API.csproj", "{D75BA5B7-1741-40BA-8D01-5A77FDEC444F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CashFlow.Gateway", "src\CashFlow.Gateway\CashFlow.Gateway.csproj", "{479A95D7-D209-4D16-A35F-183BBC071018}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CashFlow.Identity.API", "src\CashFlow.Identity.API\CashFlow.Identity.API.csproj", "{03375047-8740-4927-BEE1-F812FC7BBC3A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -26,6 +34,22 @@ Global
 		{F7C8F7F9-3DF8-43D2-AB4E-28176FDBB888}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F7C8F7F9-3DF8-43D2-AB4E-28176FDBB888}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F7C8F7F9-3DF8-43D2-AB4E-28176FDBB888}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E2D95EC0-6B1A-4B94-9F38-292952DEC1E6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E2D95EC0-6B1A-4B94-9F38-292952DEC1E6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E2D95EC0-6B1A-4B94-9F38-292952DEC1E6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E2D95EC0-6B1A-4B94-9F38-292952DEC1E6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D75BA5B7-1741-40BA-8D01-5A77FDEC444F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D75BA5B7-1741-40BA-8D01-5A77FDEC444F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D75BA5B7-1741-40BA-8D01-5A77FDEC444F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D75BA5B7-1741-40BA-8D01-5A77FDEC444F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{479A95D7-D209-4D16-A35F-183BBC071018}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{479A95D7-D209-4D16-A35F-183BBC071018}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{479A95D7-D209-4D16-A35F-183BBC071018}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{479A95D7-D209-4D16-A35F-183BBC071018}.Release|Any CPU.Build.0 = Release|Any CPU
+		{03375047-8740-4927-BEE1-F812FC7BBC3A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{03375047-8740-4927-BEE1-F812FC7BBC3A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{03375047-8740-4927-BEE1-F812FC7BBC3A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{03375047-8740-4927-BEE1-F812FC7BBC3A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{36A12D56-2FE9-4166-9FB1-FA00DA3DCFE9} = {9611D6BB-B983-47C9-A5C6-F47A68B4A2F9}
