@@ -1,11 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-    <PropertyGroup>
-        <TargetFramework>net10.0</TargetFramework>
-        <ImplicitUsings>enable</ImplicitUsings>
-        <Nullable>enable</Nullable>
-        <IsAspireSharedProject>true</IsAspireSharedProject>
-    </PropertyGroup>
+  <PropertyGroup>
+    <IsAspireSharedProject>true</IsAspireSharedProject>
+  </PropertyGroup>
 
     <ItemGroup>
         <FrameworkReference Include="Microsoft.AspNetCore.App"/>
@@ -18,5 +15,6 @@
         <PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.14.0"/>
         <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" Version="1.14.0"/>
     </ItemGroup>
+
 
 </Project>
