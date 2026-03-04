@@ -2,9 +2,9 @@ using CashFlow.Domain.SharedKernel;
 
 namespace CashFlow.Domain.Transactions;
 
-public sealed class Transaction : Entity<TransactionId>
+public sealed class Transaction : Entity<TransactionId>, IAggregateRoot
 {
-    public Guid MerchantId { get; private init; }
+    public MerchantId MerchantId { get; private init; }
     public DateOnly ReferenceDate { get; private init; }
     public TransactionType Type { get; private init; }
     public Money Value { get; private init; } = Money.Zero;
@@ -15,11 +15,9 @@ public sealed class Transaction : Entity<TransactionId>
     private Transaction() { }
 
     public static Result<Transaction> Create(
-        Guid merchantId, DateOnly date, TransactionType type, Money value,
-        string description, string? user)
+        MerchantId merchantId, DateOnly date, TransactionType type, Money value,
+        string description, string? user, TimeProvider? clock = null)
     {
-        if (merchantId == Guid.Empty)
-            return Result.Failure<Transaction>("MerchantId is required");
         if (value.Amount <= 0)
             return Result.Failure<Transaction>("Value must be positive");
         if (string.IsNullOrWhiteSpace(description))
@@ -33,11 +31,11 @@ public sealed class Transaction : Entity<TransactionId>
             Type = type,
             Value = value,
             Description = description,
-            CreatedAt = DateTimeOffset.UtcNow,
+            CreatedAt = (clock ?? TimeProvider.System).GetUtcNow(),
             CreatedBy = user
         };
 
-        transaction.AddDomainEvent(
+        transaction.Raise(
             new TransactionCreated
             {
                 TransactionId = transaction.Id,
