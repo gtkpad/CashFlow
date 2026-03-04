@@ -1,6 +1,42 @@
-@CashFlow.Transactions.API_HostAddress = http://localhost:5290
+@host = http://localhost:5290
+@baseUrl = {{host}}/api/v1/transactions
+@merchantId = 00000000-0000-0000-0000-000000000001
 
-GET {{CashFlow.Transactions.API_HostAddress}}/weatherforecast/
-Accept: application/json
+### Create a Credit transaction
+POST {{baseUrl}}/
+Content-Type: application/json
+X-User-Id: {{merchantId}}
 
-###
+{
+  "referenceDate": "2026-03-04",
+  "type": 1,
+  "amount": 1500.00,
+  "currency": "BRL",
+  "description": "Venda de produto X",
+  "createdBy": "sistema-vendas"
+}
+
+### Create a Debit transaction
+POST {{baseUrl}}/
+Content-Type: application/json
+X-User-Id: {{merchantId}}
+
+{
+  "referenceDate": "2026-03-04",
+  "type": 2,
+  "amount": 350.75,
+  "currency": "BRL",
+  "description": "Pagamento fornecedor Y",
+  "createdBy": "sistema-compras"
+}
+
+### Get transaction by ID
+# Replace with an actual transaction ID from a create response
+GET {{baseUrl}}/00000000-0000-0000-0000-000000000000
+X-User-Id: {{merchantId}}
+
+### Health check
+GET {{host}}/health
+
+### OpenAPI spec
+GET {{host}}/openapi/v1.json
