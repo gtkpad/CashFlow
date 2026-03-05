@@ -1,4 +1,4 @@
-@host = http://localhost:5254
+@host = {{host}}
 @baseUrl = {{host}}/api/identity
 
 ### Register a new user
@@ -6,7 +6,7 @@ POST {{baseUrl}}/register
 Content-Type: application/json
 
 {
-  "email": "merchant@cashflow.dev",
+  "email": "{{email}}",
   "password": "{{password}}"
 }
 
@@ -15,7 +15,7 @@ POST {{baseUrl}}/login
 Content-Type: application/json
 
 {
-  "email": "merchant@cashflow.dev",
+  "email": "{{email}}",
   "password": "{{password}}"
 }
 
@@ -24,7 +24,7 @@ POST {{baseUrl}}/login?useCookies=true
 Content-Type: application/json
 
 {
-  "email": "merchant@cashflow.dev",
+  "email": "{{email}}",
   "password": "{{password}}"
 }
 

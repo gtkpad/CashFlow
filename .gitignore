@@ -249,6 +249,9 @@ FakesAssemblies/
 .serena/
 CLAUDE.md
 
+# HTTP Client private environment (contains secrets)
+http-client.private.env.json
+
 # Visual Studio LightSwitch build output
 **/*.HTMLClient/GeneratedArtifacts
 **/*.DesktopClient/GeneratedArtifacts
