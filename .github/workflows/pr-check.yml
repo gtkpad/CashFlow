@@ -1,0 +1,47 @@
+# .github/workflows/pr-check.yml
+# Pipeline leve para feedback rapido em PRs (~3-5 min)
+# Nao inclui E2E (lentos) nem Docker Build
+name: PR Check
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+
+env:
+  DOTNET_VERSION: "10.0.x"
+
+jobs:
+  quick-check:
+    name: Quick Check (lint + build + unit)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Cache NuGet
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', '**/Directory.Packages.props') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Format check
+        run: dotnet format --verify-no-changes --severity warn
+
+      - name: Build
+        run: dotnet build --no-restore --configuration Release
+
+      - name: Unit Tests
+        run: |
+          dotnet test tests/CashFlow.UnitTests \
+            --no-restore \
+            --configuration Release \
+            --logger "console;verbosity=normal"
