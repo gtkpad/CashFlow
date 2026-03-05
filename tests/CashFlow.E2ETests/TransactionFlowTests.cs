@@ -44,17 +44,16 @@ public class TransactionFlowTests(CashFlowAppFixture fixture)
         createResponse.StatusCode.Should().Be(HttpStatusCode.Created,
             await GetResponseBody(createResponse));
 
-        // Wait for eventual consistency (Bus Outbox -> RabbitMQ -> Consumer -> DB)
-        await Task.Delay(CashFlowAppFixture.EventualConsistencyTimeout);
+        // Poll for eventual consistency instead of fixed delay
+        var balance = await EventualConsistencyHelper.WaitForConditionAsync(
+            action: async () =>
+            {
+                var resp = await client.GetAsync($"/api/v1/consolidation/{today:yyyy-MM-dd}");
+                if (!resp.IsSuccessStatusCode) return null;
+                return await resp.Content.ReadFromJsonAsync<DailyBalanceResponse>(JsonOptions);
+            },
+            predicate: b => b is not null && b.TransactionCount >= 1);
 
-        // Assert — check consolidation reflects the transaction
-        var consolidationResponse = await client.GetAsync(
-            $"/api/v1/consolidation/{today:yyyy-MM-dd}");
-        consolidationResponse.StatusCode.Should().Be(HttpStatusCode.OK,
-            await GetResponseBody(consolidationResponse));
-
-        var balance = await consolidationResponse.Content
-            .ReadFromJsonAsync<DailyBalanceResponse>(JsonOptions);
         balance.Should().NotBeNull();
         balance!.TotalCredits.Should().Be(250.00m);
         balance!.Balance.Should().Be(250.00m);
@@ -100,17 +99,16 @@ public class TransactionFlowTests(CashFlowAppFixture fixture)
         debitResponse.StatusCode.Should().Be(HttpStatusCode.Created,
             await GetResponseBody(debitResponse));
 
-        // Wait for eventual consistency
-        await Task.Delay(CashFlowAppFixture.EventualConsistencyTimeout);
+        // Poll for eventual consistency instead of fixed delay
+        var balance = await EventualConsistencyHelper.WaitForConditionAsync(
+            action: async () =>
+            {
+                var resp = await client.GetAsync($"/api/v1/consolidation/{today:yyyy-MM-dd}");
+                if (!resp.IsSuccessStatusCode) return null;
+                return await resp.Content.ReadFromJsonAsync<DailyBalanceResponse>(JsonOptions);
+            },
+            predicate: b => b is not null && b.TransactionCount >= 2);
 
-        // Assert
-        var consolidationResponse = await client.GetAsync(
-            $"/api/v1/consolidation/{today:yyyy-MM-dd}");
-        consolidationResponse.StatusCode.Should().Be(HttpStatusCode.OK,
-            await GetResponseBody(consolidationResponse));
-
-        var balance = await consolidationResponse.Content
-            .ReadFromJsonAsync<DailyBalanceResponse>(JsonOptions);
         balance.Should().NotBeNull();
         balance!.TotalCredits.Should().Be(1000.00m);
         balance!.TotalDebits.Should().Be(350.00m);

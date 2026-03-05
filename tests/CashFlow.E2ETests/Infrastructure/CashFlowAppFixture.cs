@@ -16,10 +16,6 @@ public class CashFlowAppFixture : IAsyncLifetime
     /// </summary>
     public static readonly TimeSpan StartupTimeout = TimeSpan.FromMinutes(5);
 
-    /// <summary>
-    /// Time to wait for eventual consistency (Bus Outbox → RabbitMQ → Consumer → DB).
-    /// </summary>
-    public static readonly TimeSpan EventualConsistencyTimeout = TimeSpan.FromSeconds(15);
 
     public async Task InitializeAsync()
     {
@@ -45,22 +41,13 @@ public class CashFlowAppFixture : IAsyncLifetime
         await _app.StartAsync(ct)
             .WaitAsync(StartupTimeout, ct);
 
-        // Wait for all services to be healthy before running tests
-        await _app.ResourceNotifications
-            .WaitForResourceHealthyAsync("identity", ct)
-            .WaitAsync(StartupTimeout, ct);
-
-        await _app.ResourceNotifications
-            .WaitForResourceHealthyAsync("transactions", ct)
-            .WaitAsync(StartupTimeout, ct);
-
-        await _app.ResourceNotifications
-            .WaitForResourceHealthyAsync("consolidation", ct)
-            .WaitAsync(StartupTimeout, ct);
-
-        await _app.ResourceNotifications
-            .WaitForResourceHealthyAsync("gateway", ct)
-            .WaitAsync(StartupTimeout, ct);
+        // Wait for all services to be healthy in parallel before running tests
+        await Task.WhenAll(
+            _app.ResourceNotifications.WaitForResourceHealthyAsync("identity", ct).WaitAsync(StartupTimeout, ct),
+            _app.ResourceNotifications.WaitForResourceHealthyAsync("transactions", ct).WaitAsync(StartupTimeout, ct),
+            _app.ResourceNotifications.WaitForResourceHealthyAsync("consolidation", ct).WaitAsync(StartupTimeout, ct),
+            _app.ResourceNotifications.WaitForResourceHealthyAsync("gateway", ct).WaitAsync(StartupTimeout, ct)
+        );
     }
 
     public async Task DisposeAsync()

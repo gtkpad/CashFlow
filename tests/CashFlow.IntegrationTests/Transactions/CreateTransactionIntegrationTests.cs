@@ -8,7 +8,7 @@ namespace CashFlow.IntegrationTests.Transactions;
 public class CreateTransactionIntegrationTests(TransactionsApiFactory factory)
     : IClassFixture<TransactionsApiFactory>
 {
-    private readonly HttpClient _client = factory.CreateClient();
+    private readonly HttpClient _client = factory.CreateAuthenticatedClient();
 
     private void SetMerchantId(Guid merchantId)
         => _client.DefaultRequestHeaders.Remove("X-User-Id");

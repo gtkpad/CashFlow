@@ -108,8 +108,10 @@ public class TransactionCreatedConsumerTests : IAsyncLifetime
             Currency = "BRL"
         });
 
-        // Wait for second message
-        await Task.Delay(1000);
+        // Wait for second message to be consumed
+        (await _harness.Consumed.Any<ITransactionCreated>(x =>
+            x.Context.Message.MerchantId == merchantId && x.Context.Message.Amount == 50.00m))
+            .Should().BeTrue();
 
         // Assert
         using var scope = _provider.CreateScope();
@@ -138,9 +140,10 @@ public class TransactionCreatedConsumerTests : IAsyncLifetime
             Currency = "BRL"
         });
 
-        // Assert
-        await Task.Delay(500); // allow time for potential faults
-        (await _harness.Published.Any<Fault<ITransactionCreated>>()).Should().BeFalse();
+        // Assert — wait for consumption, then verify no faults (bounded wait)
+        (await _harness.Consumed.Any<ITransactionCreated>()).Should().BeTrue();
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
+        (await _harness.Published.Any<Fault<ITransactionCreated>>(cts.Token)).Should().BeFalse();
     }
 
     public async Task DisposeAsync()
