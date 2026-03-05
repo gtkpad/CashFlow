@@ -1,0 +1,13 @@
+using './identity-containerapp.module.bicep'
+
+param env_outputs_azure_container_apps_environment_default_domain = '{{ .Env.ENV_AZURE_CONTAINER_APPS_ENVIRONMENT_DEFAULT_DOMAIN }}'
+param env_outputs_azure_container_apps_environment_id = '{{ .Env.ENV_AZURE_CONTAINER_APPS_ENVIRONMENT_ID }}'
+param env_outputs_azure_container_registry_endpoint = '{{ .Env.ENV_AZURE_CONTAINER_REGISTRY_ENDPOINT }}'
+param env_outputs_azure_container_registry_managed_identity_id = '{{ .Env.ENV_AZURE_CONTAINER_REGISTRY_MANAGED_IDENTITY_ID }}'
+param identity_containerimage = '{{ .Image }}'
+param identity_containerport = '{{ targetPortOrDefault 8080 }}'
+param identity_identity_outputs_clientid = '{{ .Env.IDENTITY_IDENTITY_CLIENTID }}'
+param identity_identity_outputs_id = '{{ .Env.IDENTITY_IDENTITY_ID }}'
+param jwt_signing_key_value = '{{ securedParameter "jwt_signing_key" }}'
+param postgres_outputs_connectionstring = '{{ .Env.POSTGRES_CONNECTIONSTRING }}'
+param postgres_outputs_hostname = '{{ .Env.POSTGRES_HOSTNAME }}'

@@ -1,0 +1,10 @@
+using './gateway-containerapp.module.bicep'
+
+param env_outputs_azure_container_apps_environment_default_domain = '{{ .Env.ENV_AZURE_CONTAINER_APPS_ENVIRONMENT_DEFAULT_DOMAIN }}'
+param env_outputs_azure_container_apps_environment_id = '{{ .Env.ENV_AZURE_CONTAINER_APPS_ENVIRONMENT_ID }}'
+param env_outputs_azure_container_registry_endpoint = '{{ .Env.ENV_AZURE_CONTAINER_REGISTRY_ENDPOINT }}'
+param env_outputs_azure_container_registry_managed_identity_id = '{{ .Env.ENV_AZURE_CONTAINER_REGISTRY_MANAGED_IDENTITY_ID }}'
+param gateway_containerimage = '{{ .Image }}'
+param gateway_containerport = '{{ targetPortOrDefault 8080 }}'
+param gateway_secret_value = '{{ securedParameter "gateway_secret" }}'
+param jwt_signing_key_value = '{{ securedParameter "jwt_signing_key" }}'
