@@ -26,10 +26,7 @@ builder.Services.AddAuthorization(options =>
         .RequireAuthenticatedUser()
         .Build();
 
-    // TODO: Add role-based policies when roles are implemented
-    // options.AddPolicy("Admin", policy => policy.RequireRole("Admin"));
-    // TODO: Add resource-based policies for fine-grained access control
-    // options.AddPolicy("MerchantOwner", policy => policy.RequireClaim("merchant_id"));
+
 });
 
 var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>();
