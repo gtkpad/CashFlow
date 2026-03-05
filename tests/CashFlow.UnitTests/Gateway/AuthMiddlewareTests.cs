@@ -1,11 +1,13 @@
+using System.Diagnostics.Metrics;
+using System.Security.Claims;
 using CashFlow.Gateway.Middleware;
 using CashFlow.ServiceDefaults;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
-using System.Security.Claims;
 
 namespace CashFlow.UnitTests.Gateway;
 
@@ -21,7 +23,13 @@ public class AuthMiddlewareTests
                 : [])
             .Build();
 
-        return new AuthMiddleware(_next, config, Substitute.For<ILogger<AuthMiddleware>>(), new CashFlowMetrics());
+        var meterFactory = new ServiceCollection()
+            .AddMetrics()
+            .BuildServiceProvider()
+            .GetRequiredService<IMeterFactory>();
+
+        return new AuthMiddleware(_next, config, Substitute.For<ILogger<AuthMiddleware>>(),
+            new CashFlowMetrics(meterFactory));
     }
 
     [Fact]

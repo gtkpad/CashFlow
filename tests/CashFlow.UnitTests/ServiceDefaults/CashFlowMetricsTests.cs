@@ -1,12 +1,23 @@
 using System.Diagnostics.Metrics;
 using CashFlow.ServiceDefaults;
 using FluentAssertions;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace CashFlow.UnitTests.ServiceDefaults;
 
 public class CashFlowMetricsTests
 {
-    private readonly CashFlowMetrics _metrics = new();
+    private readonly CashFlowMetrics _metrics;
+
+    public CashFlowMetricsTests()
+    {
+        var meterFactory = new ServiceCollection()
+            .AddMetrics()
+            .BuildServiceProvider()
+            .GetRequiredService<IMeterFactory>();
+
+        _metrics = new CashFlowMetrics(meterFactory);
+    }
 
     [Fact]
     public void RecordTransactionCreated_ShouldIncrementCounter()

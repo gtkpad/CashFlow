@@ -26,10 +26,12 @@ public class AuthMiddleware(RequestDelegate next, IConfiguration configuration,
 
         if (context.User.Identity?.IsAuthenticated != true)
         {
-            logger.LogWarning("Unauthorized request to {Path} from {RemoteIp}",
-                path, context.Connection.RemoteIpAddress);
+            var hasToken = context.Request.Headers.ContainsKey("Authorization");
+            var reason = hasToken ? "unauthorized" : "missing_token";
+            logger.LogWarning("Unauthorized request to {Path} from {RemoteIp}, reason={Reason}",
+                path, context.Connection.RemoteIpAddress, reason);
             context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-            metrics.RecordAuthFailure("unauthorized");
+            metrics.RecordAuthFailure(reason);
             return;
         }
 
