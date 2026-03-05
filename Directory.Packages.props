@@ -29,6 +29,8 @@
         <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.3" />
 
         <!-- Aspire -->
+        <PackageVersion Include="Aspire.Hosting.Azure.AppContainers" Version="13.1.2" />
+        <PackageVersion Include="Aspire.Hosting.Azure.PostgreSQL" Version="13.1.2" />
         <PackageVersion Include="Aspire.Hosting.PostgreSQL" Version="13.1.2" />
         <PackageVersion Include="Aspire.Hosting.RabbitMQ" Version="13.1.2" />
         <PackageVersion Include="Aspire.Npgsql.EntityFrameworkCore.PostgreSQL" Version="13.1.2" />

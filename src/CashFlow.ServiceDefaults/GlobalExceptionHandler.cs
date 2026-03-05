@@ -40,11 +40,11 @@ public sealed class GlobalExceptionHandler(
     public static (int StatusCode, string Title) MapException(Exception exception) => exception switch
     {
         ArgumentOutOfRangeException => (StatusCodes.Status400BadRequest, "Argument Out of Range"),
-        ArgumentException           => (StatusCodes.Status400BadRequest, "Bad Request"),
-        InvalidOperationException   => (StatusCodes.Status409Conflict, "Conflict"),
+        ArgumentException => (StatusCodes.Status400BadRequest, "Bad Request"),
+        InvalidOperationException => (StatusCodes.Status409Conflict, "Conflict"),
         _ when IsDbConcurrencyException(exception) => (StatusCodes.Status409Conflict, "Concurrency Conflict"),
         _ when IsDbDuplicateKeyException(exception) => (StatusCodes.Status409Conflict, "Duplicate Resource"),
-        _                           => (StatusCodes.Status500InternalServerError, "Internal Server Error")
+        _ => (StatusCodes.Status500InternalServerError, "Internal Server Error")
     };
 
     private static bool IsDbConcurrencyException(Exception exception) =>

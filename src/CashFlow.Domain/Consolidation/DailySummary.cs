@@ -28,7 +28,7 @@ public sealed class DailySummary : Entity<DailySummaryId>, IAggregateRoot
         switch (type)
         {
             case TransactionType.Credit: TotalCredits += value; break;
-            case TransactionType.Debit:  TotalDebits += value;  break;
+            case TransactionType.Debit: TotalDebits += value; break;
             default: throw new ArgumentOutOfRangeException(nameof(type), type, "Invalid transaction type.");
         }
 
