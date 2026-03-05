@@ -1,10 +1,8 @@
-using CashFlow.Domain.IntegrationEvents;
 using CashFlow.Domain.SharedKernel;
 using CashFlow.Domain.Transactions;
 using CashFlow.Transactions.API.Features.CreateTransaction;
 using CashFlow.Transactions.API.Persistence;
 using FluentAssertions;
-using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using NSubstitute;
 
@@ -14,7 +12,6 @@ public class CreateTransactionHandlerTests
 {
     private readonly ITransactionRepository _repository;
     private readonly TransactionsDbContext _dbContext;
-    private readonly IPublishEndpoint _publishEndpoint;
     private readonly CreateTransactionHandler _handler;
 
     public CreateTransactionHandlerTests()
@@ -26,9 +23,7 @@ public class CreateTransactionHandlerTests
             .Options;
         _dbContext = new TransactionsDbContext(options);
 
-        _publishEndpoint = Substitute.For<IPublishEndpoint>();
-
-        _handler = new CreateTransactionHandler(_repository, _dbContext, _publishEndpoint);
+        _handler = new CreateTransactionHandler(_repository, _dbContext);
     }
 
     [Fact]
@@ -53,9 +48,6 @@ public class CreateTransactionHandlerTests
 
         await _repository.Received(1).AddAsync(
             Arg.Any<Transaction>(), Arg.Any<CancellationToken>());
-
-        await _publishEndpoint.Received(1).Publish<ITransactionCreated>(
-            Arg.Any<object>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]

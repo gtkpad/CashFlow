@@ -5,6 +5,12 @@ public sealed record Money : IValueObject
     public decimal Amount { get; }
     public string Currency { get; }
 
+    /// <summary>
+    /// Creates a Money value object. Throws on invalid input because Value Objects
+    /// follow the always-valid pattern (DDD guard clauses). Invalid construction is
+    /// a programming error, not a user input error — the API boundary (GlobalExceptionHandler)
+    /// translates these into HTTP 400 responses.
+    /// </summary>
     public Money(decimal amount, string currency = "BRL")
     {
         if (string.IsNullOrWhiteSpace(currency) || currency.Length != 3)

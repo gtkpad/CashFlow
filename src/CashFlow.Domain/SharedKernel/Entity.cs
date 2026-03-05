@@ -1,6 +1,12 @@
 namespace CashFlow.Domain.SharedKernel;
 
-public abstract class Entity<TId> : IEquatable<Entity<TId>> where TId : notnull
+public interface IHasDomainEvents
+{
+    IReadOnlyList<IDomainEvent> DomainEvents { get; }
+    void ClearDomainEvents();
+}
+
+public abstract class Entity<TId> : IEquatable<Entity<TId>>, IHasDomainEvents where TId : notnull
 {
     public TId Id { get; protected init; } = default!;
 

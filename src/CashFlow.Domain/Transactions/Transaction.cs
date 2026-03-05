@@ -14,6 +14,12 @@ public sealed class Transaction : Entity<TransactionId>, IAggregateRoot
 
     private Transaction() { }
 
+    /// <summary>
+    /// Factory method using Result&lt;T&gt; because it is called from API handlers where
+    /// validation errors must be composed and returned as structured responses (not exceptions).
+    /// Contrast with Value Object constructors (throw) and domain methods called from
+    /// MassTransit consumers (throw with retry semantics).
+    /// </summary>
     public static Result<Transaction> Create(
         MerchantId merchantId, DateOnly date, TransactionType type, Money value,
         string description, string? user, TimeProvider? clock = null)

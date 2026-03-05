@@ -1,3 +1,4 @@
+using CashFlow.ServiceDefaults;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.DependencyInjection;
@@ -23,6 +24,9 @@ public static class Extensions
         builder.ConfigureOpenTelemetry();
 
         builder.AddDefaultHealthChecks();
+
+        builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+        builder.Services.AddProblemDetails();
 
         builder.Services.AddServiceDiscovery();
 
@@ -124,6 +128,12 @@ public static class Extensions
             });
         }
 
+        return app;
+    }
+
+    public static WebApplication UseGlobalExceptionHandling(this WebApplication app)
+    {
+        app.UseExceptionHandler();
         return app;
     }
 }

@@ -51,6 +51,7 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.MapDefaultEndpoints();
+app.UseGlobalExceptionHandling();
 if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 app.UseMiddleware<CashFlow.ServiceDefaults.GatewaySecretMiddleware>();

@@ -6,7 +6,7 @@ namespace CashFlow.Consolidation.API.Features.GetDailyBalance;
 
 public class GetDailyBalanceHandler(ConsolidationDbContext db)
 {
-    public async Task<GetDailyBalanceResponse> HandleAsync(
+    public async Task<GetDailyBalanceResponse?> HandleAsync(
         Guid merchantId, DateOnly date, CancellationToken ct = default)
     {
         var mId = new MerchantId(merchantId);
@@ -15,7 +15,7 @@ public class GetDailyBalanceHandler(ConsolidationDbContext db)
             .FirstOrDefaultAsync(d => d.MerchantId == mId && d.Date == date, ct);
 
         if (summary is null)
-            return new GetDailyBalanceResponse(date, 0m, 0m, 0m, 0);
+            return null;
 
         return new GetDailyBalanceResponse(
             summary.Date, summary.TotalCredits.Amount, summary.TotalDebits.Amount,

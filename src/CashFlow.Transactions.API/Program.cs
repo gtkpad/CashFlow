@@ -37,6 +37,7 @@ builder.Services.AddCarter(configurator: c =>
     c.WithValidator<CreateTransactionValidator>();
 });
 builder.Services.AddValidatorsFromAssemblyContaining<CreateTransactionValidator>();
+builder.Services.AddScoped<DomainEventInterceptor>();
 builder.Services.AddScoped<ITransactionRepository, TransactionRepository>();
 builder.Services.AddScoped<CreateTransactionHandler>();
 builder.Services.AddScoped<GetTransactionHandler>();
@@ -52,6 +53,7 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.MapDefaultEndpoints();
+app.UseGlobalExceptionHandling();
 if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 app.UseMiddleware<CashFlow.ServiceDefaults.GatewaySecretMiddleware>();

@@ -21,13 +21,20 @@ public class GetDailyBalanceEndpoint : ICarterModule
             GetDailyBalanceHandler handler, CancellationToken ct) =>
         {
             var merchantId = httpContext.GetMerchantId();
-            return Results.Ok(await handler.HandleAsync(merchantId, date, ct));
+            var result = await handler.HandleAsync(merchantId, date, ct);
+            return result is not null
+                ? Results.Ok(result)
+                : Results.Problem(
+                    detail: $"No consolidated data found for date {date:yyyy-MM-dd}.",
+                    statusCode: StatusCodes.Status404NotFound,
+                    title: "Resource Not Found");
         })
         .WithName("GetDailyBalance")
         .WithSummary("Get daily consolidated balance")
         .WithDescription("Returns the consolidated balance for a given date, including total credits, "
-            + "debits, net balance, and transaction count. Returns zeros if no data exists for the date.")
+            + "debits, net balance, and transaction count.")
         .Produces<GetDailyBalanceResponse>()
+        .ProducesProblem(StatusCodes.Status404NotFound)
         .CacheOutput("DailyBalance");
     }
 }

@@ -14,6 +14,12 @@ public sealed class DailySummary : Entity<DailySummaryId>, IAggregateRoot
 
     private DailySummary() { }
 
+    /// <summary>
+    /// Applies a transaction to this daily summary. Throws on invalid input because this
+    /// method is called exclusively from the MassTransit consumer, which provides retry
+    /// and dead-letter queue semantics — exceptions here trigger automatic retries rather
+    /// than being returned as API responses.
+    /// </summary>
     public void ApplyTransaction(TransactionType type, Money value, TimeProvider? clock = null)
     {
         if (value.Amount <= 0)
