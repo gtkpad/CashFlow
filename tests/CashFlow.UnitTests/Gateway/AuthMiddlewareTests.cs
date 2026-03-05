@@ -1,4 +1,5 @@
 using CashFlow.Gateway.Middleware;
+using CashFlow.ServiceDefaults;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
@@ -20,7 +21,7 @@ public class AuthMiddlewareTests
                 : [])
             .Build();
 
-        return new AuthMiddleware(_next, config, Substitute.For<ILogger<AuthMiddleware>>());
+        return new AuthMiddleware(_next, config, Substitute.For<ILogger<AuthMiddleware>>(), new CashFlowMetrics());
     }
 
     [Fact]
