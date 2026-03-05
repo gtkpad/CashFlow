@@ -1,6 +1,6 @@
 namespace CashFlow.Gateway.Middleware;
 
-public class AuthMiddleware(RequestDelegate next, IConfiguration configuration)
+public class AuthMiddleware(RequestDelegate next, IConfiguration configuration, ILogger<AuthMiddleware> logger)
 {
     private static readonly string[] _publicPaths = ["/api/identity/"];
 
@@ -23,6 +23,8 @@ public class AuthMiddleware(RequestDelegate next, IConfiguration configuration)
 
         if (context.User.Identity?.IsAuthenticated != true)
         {
+            logger.LogWarning("Unauthorized request to {Path} from {RemoteIp}",
+                path, context.Connection.RemoteIpAddress);
             context.Response.StatusCode = StatusCodes.Status401Unauthorized;
             return;
         }

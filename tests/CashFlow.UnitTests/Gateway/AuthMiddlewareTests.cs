@@ -2,6 +2,7 @@ using CashFlow.Gateway.Middleware;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using NSubstitute;
 using System.Security.Claims;
 
@@ -19,7 +20,7 @@ public class AuthMiddlewareTests
                 : [])
             .Build();
 
-        return new AuthMiddleware(_next, config);
+        return new AuthMiddleware(_next, config, Substitute.For<ILogger<AuthMiddleware>>());
     }
 
     [Fact]

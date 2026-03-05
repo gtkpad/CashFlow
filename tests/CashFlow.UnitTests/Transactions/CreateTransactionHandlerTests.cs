@@ -4,6 +4,7 @@ using CashFlow.Transactions.API.Features.CreateTransaction;
 using CashFlow.Transactions.API.Persistence;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using NSubstitute;
 
 namespace CashFlow.UnitTests.Transactions;
@@ -23,7 +24,8 @@ public class CreateTransactionHandlerTests
             .Options;
         _dbContext = new TransactionsDbContext(options);
 
-        _handler = new CreateTransactionHandler(_repository, _dbContext);
+        _handler = new CreateTransactionHandler(_repository, _dbContext,
+            Substitute.For<ILogger<CreateTransactionHandler>>());
     }
 
     [Fact]

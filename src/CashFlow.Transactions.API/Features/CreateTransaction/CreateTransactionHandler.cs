@@ -1,12 +1,14 @@
 using CashFlow.Domain.SharedKernel;
 using CashFlow.Domain.Transactions;
 using CashFlow.Transactions.API.Persistence;
+using Microsoft.Extensions.Logging;
 
 namespace CashFlow.Transactions.API.Features.CreateTransaction;
 
 public class CreateTransactionHandler(
     ITransactionRepository repository,
-    TransactionsDbContext db)
+    TransactionsDbContext db,
+    ILogger<CreateTransactionHandler> logger)
 {
     public async Task<Result<CreateTransactionResponse>> HandleAsync(
         Guid merchantId, CreateTransactionCommand command, CancellationToken ct = default)
@@ -17,11 +19,18 @@ public class CreateTransactionHandler(
             command.Description, command.CreatedBy);
 
         if (!result.IsSuccess)
+        {
+            logger.LogWarning("Transaction creation failed for MerchantId {MerchantId}: {Error}",
+                merchantId, result.Error);
             return Result.Failure<CreateTransactionResponse>(result.Error!);
+        }
 
         var transaction = result.Value;
         await repository.AddAsync(transaction, ct);
         await db.SaveChangesAsync(ct);
+
+        logger.LogInformation("Transaction {TransactionId} created for MerchantId {MerchantId}, Amount {Amount} {Currency}",
+            transaction.Id.Value, merchantId, command.Amount, command.Currency);
 
         return Result.Success(new CreateTransactionResponse(
             transaction.Id.Value, transaction.CreatedAt));
