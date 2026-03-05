@@ -12,7 +12,12 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
 
-builder.AddNpgsqlDbContext<TransactionsDbContext>("transactions-db");
+builder.Services.AddDbContext<TransactionsDbContext>((sp, options) =>
+{
+    options.UseNpgsql(builder.Configuration.GetConnectionString("transactions-db"));
+    options.AddInterceptors(sp.GetRequiredService<DomainEventInterceptor>());
+});
+builder.EnrichNpgsqlDbContext<TransactionsDbContext>();
 
 builder.Services.AddMassTransit(x =>
 {

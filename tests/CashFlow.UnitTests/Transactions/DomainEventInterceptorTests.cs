@@ -23,8 +23,9 @@ public class DomainEventInterceptorTests
         var interceptor = new DomainEventInterceptor(_publishEndpoint);
         var options = new DbContextOptionsBuilder<TransactionsDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .AddInterceptors(interceptor)
             .Options;
-        return new TransactionsDbContext(options, interceptor);
+        return new TransactionsDbContext(options);
     }
 
     [Fact]
