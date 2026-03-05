@@ -1,5 +1,6 @@
 using CashFlow.Domain.SharedKernel;
 using CashFlow.Domain.Transactions;
+using CashFlow.ServiceDefaults;
 using CashFlow.Transactions.API.Features.CreateTransaction;
 using CashFlow.Transactions.API.Persistence;
 using FluentAssertions;
@@ -25,7 +26,8 @@ public class CreateTransactionHandlerTests
         _dbContext = new TransactionsDbContext(options);
 
         _handler = new CreateTransactionHandler(_repository, _dbContext,
-            Substitute.For<ILogger<CreateTransactionHandler>>());
+            Substitute.For<ILogger<CreateTransactionHandler>>(),
+            new CashFlowMetrics());
     }
 
     [Fact]

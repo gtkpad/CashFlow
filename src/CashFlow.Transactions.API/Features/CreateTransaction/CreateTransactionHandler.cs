@@ -1,5 +1,6 @@
 using CashFlow.Domain.SharedKernel;
 using CashFlow.Domain.Transactions;
+using CashFlow.ServiceDefaults;
 using CashFlow.Transactions.API.Persistence;
 using Microsoft.Extensions.Logging;
 
@@ -8,7 +9,8 @@ namespace CashFlow.Transactions.API.Features.CreateTransaction;
 public class CreateTransactionHandler(
     ITransactionRepository repository,
     TransactionsDbContext db,
-    ILogger<CreateTransactionHandler> logger)
+    ILogger<CreateTransactionHandler> logger,
+    CashFlowMetrics metrics)
 {
     public async Task<Result<CreateTransactionResponse>> HandleAsync(
         Guid merchantId, CreateTransactionCommand command, CancellationToken ct = default)
@@ -28,6 +30,9 @@ public class CreateTransactionHandler(
         var transaction = result.Value;
         await repository.AddAsync(transaction, ct);
         await db.SaveChangesAsync(ct);
+
+        metrics.RecordTransactionCreated(command.Type.ToString(), command.Currency);
+        metrics.RecordTransactionAmount((double)command.Amount, command.Type.ToString(), command.Currency);
 
         logger.LogInformation("Transaction {TransactionId} created for MerchantId {MerchantId}, Amount {Amount} {Currency}",
             transaction.Id.Value, merchantId, command.Amount, command.Currency);
