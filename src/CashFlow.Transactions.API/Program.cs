@@ -52,9 +52,9 @@ var app = builder.Build();
 
 app.UseProductionHttpsSecurity();
 
-// Auto-apply migrations on startup (dev only)
-using (var scope = app.Services.CreateScope())
+if (app.Environment.IsDevelopment())
 {
+    using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<TransactionsDbContext>();
     await db.Database.MigrateAsync();
 }
