@@ -18,6 +18,7 @@ var transactionsDb = postgres.AddDatabase("transactions-db");
 var consolidationDb = postgres.AddDatabase("consolidation-db");
 
 var rabbitmq = builder.AddRabbitMQ("messaging")
+    .WithDataVolume()
     .WithManagementPlugin();
 
 // Services
