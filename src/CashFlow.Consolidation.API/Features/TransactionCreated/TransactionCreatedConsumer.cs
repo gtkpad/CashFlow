@@ -1,7 +1,9 @@
+using System.Diagnostics;
 using CashFlow.Consolidation.API.Persistence;
 using CashFlow.Domain.Consolidation;
 using CashFlow.Domain.IntegrationEvents;
 using CashFlow.Domain.SharedKernel;
+using CashFlow.ServiceDefaults;
 using MassTransit;
 using Microsoft.AspNetCore.OutputCaching;
 using Microsoft.EntityFrameworkCore;
@@ -12,10 +14,12 @@ public class TransactionCreatedConsumer(
     IDailySummaryRepository repo,
     ConsolidationDbContext db,
     IOutputCacheStore cacheStore,
-    ILogger<TransactionCreatedConsumer> logger) : IConsumer<ITransactionCreated>
+    ILogger<TransactionCreatedConsumer> logger,
+    CashFlowMetrics metrics) : IConsumer<ITransactionCreated>
 {
     public async Task Consume(ConsumeContext<ITransactionCreated> context)
     {
+        var stopwatch = Stopwatch.StartNew();
         var evt = context.Message;
         var merchantId = new MerchantId(evt.MerchantId);
         var type = Enum.Parse<TransactionType>(evt.TransactionType);
@@ -38,6 +42,16 @@ public class TransactionCreatedConsumer(
 
         var tag = $"balance-{evt.MerchantId}-{evt.ReferenceDate:yyyy-MM-dd}";
         await cacheStore.EvictByTagAsync(tag, context.CancellationToken);
+
+        stopwatch.Stop();
+        metrics.RecordConsolidationEventProcessed("success");
+        metrics.RecordConsolidationProcessingDuration(stopwatch.Elapsed.TotalMilliseconds);
+
+        if (context.SentTime.HasValue)
+        {
+            var consistencyMs = (DateTimeOffset.UtcNow - context.SentTime.Value).TotalMilliseconds;
+            metrics.RecordEventualConsistency(consistencyMs);
+        }
 
         logger.LogInformation(
             "Consolidated successfully: MerchantId={MerchantId}, Date={Date}, Balance={Balance}",
