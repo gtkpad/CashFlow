@@ -1,5 +1,5 @@
 @host = http://localhost:5032
-@token = REPLACE_WITH_ACCESS_TOKEN
+@token = PASTE_YOUR_BEARER_TOKEN_HERE
 
 ##########################################################
 # Identity (public - no auth required)
@@ -41,7 +41,7 @@ Content-Type: application/json
 Authorization: Bearer {{token}}
 
 {
-  "referenceDate": "2026-03-04",
+  "referenceDate": "2026-03-05",
   "type": 1,
   "amount": 1500.00,
   "currency": "BRL",
@@ -55,7 +55,7 @@ Content-Type: application/json
 Authorization: Bearer {{token}}
 
 {
-  "referenceDate": "2026-03-04",
+  "referenceDate": "2026-03-05",
   "type": 2,
   "amount": 350.75,
   "currency": "BRL",
@@ -72,7 +72,7 @@ Authorization: Bearer {{token}}
 ##########################################################
 
 ### Get daily balance
-GET {{host}}/api/v1/consolidation/2026-03-04
+GET {{host}}/api/v1/consolidation/2026-03-05
 Authorization: Bearer {{token}}
 
 ##########################################################
