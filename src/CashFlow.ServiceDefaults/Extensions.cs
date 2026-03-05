@@ -136,4 +136,15 @@ public static class Extensions
         app.UseExceptionHandler();
         return app;
     }
+
+    public static WebApplication UseProductionHttpsSecurity(this WebApplication app)
+    {
+        if (!app.Environment.IsDevelopment())
+        {
+            app.UseHsts();
+            app.UseHttpsRedirection();
+        }
+
+        return app;
+    }
 }

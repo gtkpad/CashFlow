@@ -9,15 +9,49 @@ builder.Services.AddReverseProxy()
     .LoadFromConfig(builder.Configuration.GetSection("ReverseProxy"))
     .AddServiceDiscoveryDestinationResolver();
 
+var validAudiences = builder.Configuration.GetSection("Identity:ValidAudiences").Get<string[]>();
+
 builder.Services.AddAuthentication("Bearer")
     .AddJwtBearer("Bearer", options =>
     {
         options.Authority = builder.Configuration["Identity:Authority"];
-        options.RequireHttpsMetadata = false;
-        options.TokenValidationParameters.ValidateAudience = false;
+        options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
+        options.TokenValidationParameters.ValidateAudience = validAudiences is { Length: > 0 };
+        options.TokenValidationParameters.ValidAudiences = validAudiences;
     });
 
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+    options.DefaultPolicy = new Microsoft.AspNetCore.Authorization.AuthorizationPolicyBuilder()
+        .RequireAuthenticatedUser()
+        .Build();
+
+    // TODO: Add role-based policies when roles are implemented
+    // options.AddPolicy("Admin", policy => policy.RequireRole("Admin"));
+    // TODO: Add resource-based policies for fine-grained access control
+    // options.AddPolicy("MerchantOwner", policy => policy.RequireClaim("merchant_id"));
+});
+
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>();
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("GatewayPolicy", policy =>
+    {
+        if (allowedOrigins is { Length: > 0 })
+        {
+            policy.WithOrigins(allowedOrigins);
+        }
+        else if (builder.Environment.IsDevelopment())
+        {
+            policy.WithOrigins("http://localhost:3000", "http://localhost:5173");
+        }
+        // Production without config: no origins allowed (default deny)
+
+        policy.AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
+    });
+});
 
 builder.Services.AddRateLimiter(options =>
 {
@@ -34,9 +68,11 @@ builder.Services.AddRateLimiter(options =>
 
 var app = builder.Build();
 
+app.UseProductionHttpsSecurity();
 app.MapDefaultEndpoints();
 
 app.UseRateLimiter();
+app.UseCors("GatewayPolicy");
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseMiddleware<AuthMiddleware>();

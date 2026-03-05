@@ -50,6 +50,8 @@ builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
+app.UseProductionHttpsSecurity();
+
 // Auto-apply migrations on startup (dev only)
 using (var scope = app.Services.CreateScope())
 {
