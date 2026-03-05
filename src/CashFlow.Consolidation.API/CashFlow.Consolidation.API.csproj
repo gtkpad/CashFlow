@@ -17,4 +17,8 @@
     <ProjectReference Include="..\CashFlow.ServiceDefaults\CashFlow.ServiceDefaults.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="bin\" />
+  </ItemGroup>
+
 </Project>
