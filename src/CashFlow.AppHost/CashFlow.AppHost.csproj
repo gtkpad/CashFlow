@@ -11,4 +11,11 @@
     <PackageReference Include="Aspire.Hosting.RabbitMQ" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\CashFlow.Gateway\CashFlow.Gateway.csproj" />
+    <ProjectReference Include="..\CashFlow.Identity.API\CashFlow.Identity.API.csproj" />
+    <ProjectReference Include="..\CashFlow.Transactions.API\CashFlow.Transactions.API.csproj" />
+    <ProjectReference Include="..\CashFlow.Consolidation.API\CashFlow.Consolidation.API.csproj" />
+  </ItemGroup>
+
 </Project>
