@@ -1,5 +1,7 @@
+using System.Text;
 using System.Threading.RateLimiting;
 using CashFlow.Gateway.Middleware;
+using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,13 +13,22 @@ builder.Services.AddReverseProxy()
 
 var validAudiences = builder.Configuration.GetSection("Identity:ValidAudiences").Get<string[]>();
 
+var jwtSigningKey = builder.Configuration["Jwt:SigningKey"]!;
+
 builder.Services.AddAuthentication("Bearer")
     .AddJwtBearer("Bearer", options =>
     {
-        options.Authority = builder.Configuration["Identity:Authority"];
         options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
-        options.TokenValidationParameters.ValidateAudience = validAudiences is { Length: > 0 };
-        options.TokenValidationParameters.ValidAudiences = validAudiences;
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSigningKey)),
+            ValidateIssuer = true,
+            ValidIssuer = "cashflow-identity",
+            ValidateAudience = validAudiences is { Length: > 0 },
+            ValidAudiences = validAudiences,
+            ValidateLifetime = true,
+        };
     });
 
 builder.Services.AddAuthorization(options =>

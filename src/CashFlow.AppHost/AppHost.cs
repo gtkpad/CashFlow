@@ -3,6 +3,7 @@ var builder = DistributedApplication.CreateBuilder(args);
 // Dev: dotnet user-secrets set "Parameters:gateway-secret" "<value>" --project src/CashFlow.AppHost
 // Produção: Azure Key Vault ou variável de ambiente
 var gatewaySecret = builder.AddParameter("gateway-secret", secret: true);
+var jwtSigningKey = builder.AddParameter("jwt-signing-key", secret: true);
 
 // Infrastructure
 var postgres = builder.AddPostgres("postgres")
@@ -20,6 +21,7 @@ var rabbitmq = builder.AddRabbitMQ("messaging")
 var identity = builder.AddProject<Projects.CashFlow_Identity_API>("identity")
     .WithReference(identityDb)
     .WithEnvironment("Identity__Audience", "cashflow-api")
+    .WithEnvironment("Jwt__SigningKey", jwtSigningKey)
     .WaitFor(identityDb);
 
 var transactions = builder.AddProject<Projects.CashFlow_Transactions_API>("transactions")
@@ -41,8 +43,8 @@ builder.AddProject<Projects.CashFlow_Gateway>("gateway")
     .WithReference(identity)
     .WithReference(transactions)
     .WithReference(consolidation)
-    .WithEnvironment("Identity__Authority", identity.GetEndpoint("http"))
     .WithEnvironment("Identity__ValidAudiences__0", "cashflow-api")
+    .WithEnvironment("Jwt__SigningKey", jwtSigningKey)
     .WithEnvironment("Gateway__Secret", gatewaySecret)
     .WaitFor(identity)
     .WaitFor(transactions)

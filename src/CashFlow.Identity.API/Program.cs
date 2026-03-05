@@ -1,5 +1,7 @@
 using CashFlow.Identity.API;
+using CashFlow.Identity.API.Auth;
 using CashFlow.Identity.API.Persistence;
+using Microsoft.AspNetCore.Authentication.BearerToken;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -14,6 +16,19 @@ builder.Services.AddHealthChecks()
 
 builder.Services.AddIdentityApiEndpoints<IdentityUser>()
     .AddEntityFrameworkStores<IdentityDbContext>();
+
+builder.Services.Configure<BearerTokenOptions>(IdentityConstants.BearerScheme, options =>
+{
+    var signingKey = builder.Configuration["Jwt:SigningKey"]!;
+    var issuer = "cashflow-identity";
+    var audience = builder.Configuration["Identity:Audience"] ?? "cashflow-api";
+
+    var protector = new JwtTokenProtector(signingKey, issuer, audience);
+    options.BearerTokenProtector = protector;
+    options.RefreshTokenProtector = protector;
+    options.BearerTokenExpiration = TimeSpan.FromHours(1);
+    options.RefreshTokenExpiration = TimeSpan.FromDays(7);
+});
 
 builder.Services.Configure<IdentityOptions>(options =>
 {
