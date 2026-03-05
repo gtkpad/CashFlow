@@ -24,6 +24,8 @@ param jwt_signing_key string
 @secure()
 param messaging_password string
 
+param alert_email_address string = ''
+
 var tags = {
   'azd-env-name': environmentName
 }
@@ -123,3 +125,25 @@ output POSTGRES_CONNECTIONSTRING string = postgres.outputs.connectionString
 output POSTGRES_HOSTNAME string = postgres.outputs.hostName
 output TRANSACTIONS_IDENTITY_CLIENTID string = transactions_identity.outputs.clientId
 output TRANSACTIONS_IDENTITY_ID string = transactions_identity.outputs.id
+output APPLICATIONINSIGHTS_CONNECTION_STRING string = env.outputs.APPLICATIONINSIGHTS_CONNECTION_STRING
+
+module monitoring 'monitoring/alerts.module.bicep' = if (!empty(alert_email_address)) {
+  name: 'monitoring-alerts'
+  scope: rg
+  params: {
+    location: location
+    applicationInsightsId: env.outputs.APPLICATIONINSIGHTS_ID
+    alertEmailAddress: alert_email_address
+    tags: tags
+  }
+}
+
+module workbooks 'monitoring/workbooks.module.bicep' = {
+  name: 'monitoring-workbooks'
+  scope: rg
+  params: {
+    location: location
+    applicationInsightsId: env.outputs.APPLICATIONINSIGHTS_ID
+    tags: tags
+  }
+}

@@ -105,6 +105,20 @@ public class AuthMiddlewareTests
     }
 
     [Fact]
+    public async Task InvokeAsync_InvalidToken_ShouldReturn401()
+    {
+        var middleware = CreateMiddleware();
+        var context = new DefaultHttpContext();
+        context.Request.Path = "/api/transactions";
+        context.Request.Headers["Authorization"] = "Bearer invalid-token";
+
+        await middleware.InvokeAsync(context);
+
+        context.Response.StatusCode.Should().Be(StatusCodes.Status401Unauthorized);
+        await _next.DidNotReceive().Invoke(context);
+    }
+
+    [Fact]
     public async Task InvokeAsync_UserWithNameIdentifierClaim_ShouldFallback()
     {
         var middleware = CreateMiddleware();

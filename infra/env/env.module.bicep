@@ -38,6 +38,20 @@ resource env_law 'Microsoft.OperationalInsights/workspaces@2025-02-01' = {
   tags: tags
 }
 
+resource appInsights 'Microsoft.Insights/components@2020-02-02' = {
+  name: take('appinsights-${uniqueString(resourceGroup().id)}', 63)
+  location: location
+  kind: 'web'
+  properties: {
+    Application_Type: 'web'
+    WorkspaceResourceId: env_law.id
+    IngestionMode: 'LogAnalytics'
+    publicNetworkAccessForIngestion: 'Enabled'
+    publicNetworkAccessForQuery: 'Enabled'
+  }
+  tags: tags
+}
+
 resource env 'Microsoft.App/managedEnvironments@2025-01-01' = {
   name: take('env${uniqueString(resourceGroup().id)}', 24)
   location: location
@@ -125,3 +139,9 @@ output AZURE_CONTAINER_APPS_ENVIRONMENT_NAME string = env.name
 output AZURE_CONTAINER_APPS_ENVIRONMENT_ID string = env.id
 
 output AZURE_CONTAINER_APPS_ENVIRONMENT_DEFAULT_DOMAIN string = env.properties.defaultDomain
+
+output APPLICATIONINSIGHTS_CONNECTION_STRING string = appInsights.properties.ConnectionString
+
+output APPLICATIONINSIGHTS_NAME string = appInsights.name
+
+output APPLICATIONINSIGHTS_ID string = appInsights.id
