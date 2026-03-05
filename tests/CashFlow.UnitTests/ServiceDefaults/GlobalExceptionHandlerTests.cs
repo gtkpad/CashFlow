@@ -41,4 +41,43 @@ public class GlobalExceptionHandlerTests
 
         statusCode.Should().Be(StatusCodes.Status500InternalServerError);
     }
+
+    [Fact]
+    public void MapException_DbUpdateConcurrencyException_ShouldReturn409()
+    {
+        var exception = new DbUpdateConcurrencyException("concurrency conflict");
+
+        var (statusCode, title) = GlobalExceptionHandler.MapException(exception);
+
+        statusCode.Should().Be(StatusCodes.Status409Conflict);
+        title.Should().Be("Concurrency Conflict");
+    }
+
+    [Fact]
+    public void MapException_DbUpdateExceptionWithDuplicateKey_ShouldReturn409()
+    {
+        var inner = new Exception("duplicate key value violates unique constraint");
+        var exception = new DbUpdateException("db error", inner);
+
+        var (statusCode, title) = GlobalExceptionHandler.MapException(exception);
+
+        statusCode.Should().Be(StatusCodes.Status409Conflict);
+        title.Should().Be("Duplicate Resource");
+    }
+
+    [Fact]
+    public void MapException_DbUpdateExceptionWithUniqueConstraint_ShouldReturn409()
+    {
+        var inner = new Exception("unique constraint violation on table X");
+        var exception = new DbUpdateException("db error", inner);
+
+        var (statusCode, title) = GlobalExceptionHandler.MapException(exception);
+
+        statusCode.Should().Be(StatusCodes.Status409Conflict);
+        title.Should().Be("Duplicate Resource");
+    }
+
+    // Nested classes whose GetType().Name matches what GlobalExceptionHandler checks
+    private class DbUpdateConcurrencyException(string message) : Exception(message);
+    private class DbUpdateException(string message, Exception inner) : Exception(message, inner);
 }

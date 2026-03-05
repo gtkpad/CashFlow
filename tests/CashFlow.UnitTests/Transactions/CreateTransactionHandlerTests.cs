@@ -69,4 +69,28 @@ public class CreateTransactionHandlerTests
         await act.Should().ThrowAsync<ArgumentException>()
             .WithMessage("*MerchantId*");
     }
+
+    [Fact]
+    public async Task HandleAsync_InvalidDomainData_ShouldReturnFailure()
+    {
+        // Arrange — zero amount triggers Result.Failure in Transaction.Create
+        var merchantId = Guid.NewGuid();
+        var command = new CreateTransactionCommand(
+            ReferenceDate: DateOnly.FromDateTime(DateTime.Today),
+            Type: TransactionType.Credit,
+            Amount: 0m,
+            Currency: "BRL",
+            Description: "Invalid transaction",
+            CreatedBy: "user@test.com");
+
+        // Act
+        var result = await _handler.HandleAsync(merchantId, command);
+
+        // Assert — handler propagates the domain failure, never calls repository
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("positive");
+
+        await _repository.DidNotReceive().AddAsync(
+            Arg.Any<Transaction>(), Arg.Any<CancellationToken>());
+    }
 }

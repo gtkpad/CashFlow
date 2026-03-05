@@ -53,7 +53,7 @@ let counter = 0;
 export default function (data) {
   counter++;
   const today = new Date().toISOString().split('T')[0];
-  const type = counter % 2 === 0 ? 0 : 1; // alternate Credit/Debit
+  const type = counter % 2 === 0 ? 1 : 2; // alternate Credit(1)/Debit(2)
 
   const payload = JSON.stringify({
     referenceDate: today,
