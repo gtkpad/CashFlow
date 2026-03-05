@@ -1,22 +1,47 @@
 namespace CashFlow.Domain.SharedKernel;
 
-public record Money(decimal Amount, string Currency = "BRL")
+public sealed record Money : IValueObject
 {
+    public decimal Amount { get; }
+    public string Currency { get; }
+
+    /// <summary>
+    /// Creates a Money value object. Throws on invalid input because Value Objects
+    /// follow the always-valid pattern (DDD guard clauses). Invalid construction is
+    /// a programming error, not a user input error — the API boundary (GlobalExceptionHandler)
+    /// translates these into HTTP 400 responses.
+    /// </summary>
+    public Money(decimal amount, string currency = "BRL")
+    {
+        if (string.IsNullOrWhiteSpace(currency) || currency.Length != 3)
+            throw new ArgumentException("Currency must be a 3-letter ISO 4217 code.", nameof(currency));
+
+        Amount = amount;
+        Currency = currency.ToUpperInvariant();
+    }
+
     public static Money Zero => new(0m);
+
+    public bool IsPositive() => Amount > 0;
+    public bool IsZero() => Amount == 0;
+    public bool IsNegative() => Amount < 0;
 
     public static Money operator +(Money a, Money b)
     {
-        if (a.Currency != b.Currency)
-            throw new InvalidOperationException(
-                $"Cannot add different currencies: {a.Currency} and {b.Currency}");
-        return a with { Amount = a.Amount + b.Amount };
+        EnsureSameCurrency(a, b);
+        return new Money(a.Amount + b.Amount, a.Currency);
     }
 
     public static Money operator -(Money a, Money b)
     {
+        EnsureSameCurrency(a, b);
+        return new Money(a.Amount - b.Amount, a.Currency);
+    }
+
+    private static void EnsureSameCurrency(Money a, Money b)
+    {
         if (a.Currency != b.Currency)
             throw new InvalidOperationException(
-                $"Cannot subtract different currencies: {a.Currency} and {b.Currency}");
-        return a with { Amount = a.Amount - b.Amount };
+                $"Cannot perform operation on different currencies: {a.Currency} and {b.Currency}");
     }
 }

@@ -1,0 +1,60 @@
+# .github/workflows/cd.yml
+name: CD
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  DOTNET_VERSION: "10.0.x"
+
+jobs:
+  deploy:
+    name: Deploy to Azure Container Apps
+    if: github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      AZURE_ENV_NAME: ${{ vars.AZURE_ENV_NAME }}
+      AZURE_LOCATION: ${{ vars.AZURE_LOCATION }}
+      AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Install Azure Developer CLI
+        uses: Azure/setup-azd@v2
+
+      - name: Log in to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Inject secrets into azd environment
+        env:
+          AZURE_GATEWAY_SECRET: ${{ secrets.AZURE_GATEWAY_SECRET }}
+          AZURE_JWT_SIGNING_KEY: ${{ secrets.AZURE_JWT_SIGNING_KEY }}
+          AZURE_MESSAGING_PASSWORD: ${{ secrets.AZURE_MESSAGING_PASSWORD }}
+        run: |
+          azd env new ${{ vars.AZURE_ENV_NAME }} --no-prompt || true
+          azd env set AZURE_GATEWAY_SECRET "$AZURE_GATEWAY_SECRET"
+          azd env set AZURE_JWT_SIGNING_KEY "$AZURE_JWT_SIGNING_KEY"
+          azd env set AZURE_MESSAGING_PASSWORD "$AZURE_MESSAGING_PASSWORD"
+
+      - name: Provision Infrastructure
+        run: azd provision --no-prompt
+
+      - name: Deploy Application
+        run: azd deploy --no-prompt

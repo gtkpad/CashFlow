@@ -1,0 +1,65 @@
+<Project>
+    <PropertyGroup>
+        <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <!-- Messaging -->
+        <PackageVersion Include="MassTransit" Version="8.5.8" />
+        <PackageVersion Include="MassTransit.EntityFrameworkCore" Version="8.5.8" />
+        <PackageVersion Include="MassTransit.RabbitMQ" Version="8.5.8" />
+
+        <!-- Persistence -->
+        <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="10.0.3" />
+        <PackageVersion Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.3" />
+        <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.0" />
+        <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.3" />
+
+        <!-- API -->
+        <PackageVersion Include="Carter" Version="10.0.0" />
+        <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.3" />
+        <PackageVersion Include="FluentValidation" Version="12.1.1" />
+        <PackageVersion Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
+
+        <!-- Identity -->
+        <PackageVersion Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.3" />
+
+        <!-- Gateway -->
+        <PackageVersion Include="Yarp.ReverseProxy" Version="2.3.0" />
+        <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.3" />
+
+        <!-- Aspire -->
+        <PackageVersion Include="Aspire.Hosting.Azure.AppContainers" Version="13.1.2" />
+        <PackageVersion Include="Aspire.Hosting.Azure.PostgreSQL" Version="13.1.2" />
+        <PackageVersion Include="Aspire.Hosting.PostgreSQL" Version="13.1.2" />
+        <PackageVersion Include="Aspire.Hosting.RabbitMQ" Version="13.1.2" />
+        <PackageVersion Include="Aspire.Npgsql.EntityFrameworkCore.PostgreSQL" Version="13.1.2" />
+        <PackageVersion Include="Aspire.RabbitMQ.Client" Version="13.1.2" />
+        <PackageVersion Include="Aspire.Hosting.Testing" Version="13.1.2" />
+
+        <!-- ServiceDefaults / OpenTelemetry -->
+        <PackageVersion Include="Microsoft.Extensions.Http.Resilience" Version="10.3.0" />
+        <PackageVersion Include="Microsoft.Extensions.ServiceDiscovery" Version="10.3.0" />
+        <PackageVersion Include="Microsoft.Extensions.ServiceDiscovery.Yarp" Version="10.3.0" />
+        <PackageVersion Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.14.0" />
+        <PackageVersion Include="OpenTelemetry.Extensions.Hosting" Version="1.14.0" />
+        <PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.14.0" />
+        <PackageVersion Include="OpenTelemetry.Instrumentation.Http" Version="1.14.0" />
+        <PackageVersion Include="OpenTelemetry.Instrumentation.Runtime" Version="1.14.0" />
+
+        <!-- Testing -->
+        <PackageVersion Include="coverlet.collector" Version="6.0.4" />
+        <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+        <PackageVersion Include="xunit" Version="2.9.3" />
+        <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.4" />
+        <PackageVersion Include="FluentAssertions" Version="7.2.0" />
+        <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.3" />
+        <PackageVersion Include="Testcontainers" Version="4.10.0" />
+        <PackageVersion Include="Testcontainers.PostgreSql" Version="4.10.0" />
+        <PackageVersion Include="Testcontainers.RabbitMq" Version="4.10.0" />
+        <PackageVersion Include="NetArchTest.Rules" Version="1.3.2" />
+        <PackageVersion Include="NSubstitute" Version="5.3.0" />
+        <PackageVersion Include="Microsoft.EntityFrameworkCore.InMemory" Version="10.0.3" />
+        <PackageVersion Include="Respawn" Version="7.0.0" />
+    </ItemGroup>
+</Project>

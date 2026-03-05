@@ -1,0 +1,46 @@
+@host = {{host}}
+@baseUrl = {{host}}/api/identity
+
+### Register a new user
+POST {{baseUrl}}/register
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}"
+}
+
+### Login
+POST {{baseUrl}}/login
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}"
+}
+
+### Login (use cookies instead of bearer tokens)
+POST {{baseUrl}}/login?useCookies=true
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}"
+}
+
+### Refresh token
+# Replace the refreshToken value with the one received from /login
+POST {{baseUrl}}/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "REPLACE_WITH_REFRESH_TOKEN"
+}
+
+### Get user info (requires authentication)
+# Replace the token with the one received from /login
+GET {{baseUrl}}/manage/info
+Authorization: Bearer REPLACE_WITH_ACCESS_TOKEN
+
+### Health check
+GET {{host}}/health

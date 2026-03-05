@@ -1,0 +1,271 @@
+# .github/workflows/ci.yml
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, labeled]
+
+env:
+  DOTNET_VERSION: "10.0.x"
+
+jobs:
+  # -----------------------------------------------
+  # JOB 1: Lint e Formatacao
+  # -----------------------------------------------
+  lint-and-format:
+    name: Lint & Format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Cache NuGet
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', '**/Directory.Packages.props') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Check formatting
+        run: dotnet format --verify-no-changes --severity warn
+
+  # -----------------------------------------------
+  # JOB 2: Build
+  # -----------------------------------------------
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Cache NuGet
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', '**/Directory.Packages.props') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --no-restore --configuration Release
+
+  # -----------------------------------------------
+  # JOB 3: Testes Unitarios
+  # -----------------------------------------------
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    needs: [lint-and-format, build]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Cache NuGet
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', '**/Directory.Packages.props') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Run Unit Tests
+        run: |
+          dotnet test tests/CashFlow.UnitTests \
+            --no-restore \
+            --configuration Release \
+            --logger "trx;LogFileName=unit-results.trx" \
+            --results-directory ./test-results/unit
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: unit-test-results
+          path: ./test-results/unit
+
+  # -----------------------------------------------
+  # JOB 4: Testes de Integracao (paralelo ao JOB 5)
+  # -----------------------------------------------
+  integration-tests:
+    name: Integration Tests (Testcontainers)
+    runs-on: ubuntu-latest
+    needs: unit-tests
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Cache NuGet
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', '**/Directory.Packages.props') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Run Integration Tests
+        run: |
+          dotnet test tests/CashFlow.IntegrationTests \
+            --no-restore \
+            --configuration Release \
+            --logger "trx;LogFileName=integration-results.trx" \
+            --results-directory ./test-results/integration
+        env:
+          DOCKER_HOST: unix:///var/run/docker.sock
+          TESTCONTAINERS_RYUK_DISABLED: "false"
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: integration-test-results
+          path: ./test-results/integration
+
+  # -----------------------------------------------
+  # JOB 5: Testes de Arquitetura (paralelo ao JOB 4)
+  # -----------------------------------------------
+  architecture-tests:
+    name: Architecture Tests (NetArchTest)
+    runs-on: ubuntu-latest
+    needs: unit-tests
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Cache NuGet
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', '**/Directory.Packages.props') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Run Architecture Tests
+        run: |
+          dotnet test tests/CashFlow.ArchitectureTests \
+            --no-restore \
+            --configuration Release \
+            --logger "trx;LogFileName=arch-results.trx" \
+            --results-directory ./test-results/arch
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: arch-test-results
+          path: ./test-results/arch
+
+  # -----------------------------------------------
+  # JOB 6: Testes E2E — .NET Aspire
+  # Executado apenas em push/main OU com label "run-e2e" (ADR-009)
+  # -----------------------------------------------
+  e2e-tests:
+    name: E2E Tests (.NET Aspire)
+    runs-on: ubuntu-latest
+    needs: [integration-tests, architecture-tests]
+    if: |
+      github.event_name == 'push' ||
+      contains(github.event.pull_request.labels.*.name, 'run-e2e')
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Cache NuGet
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', '**/Directory.Packages.props') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      - name: Pre-pull Docker images (Aspire)
+        run: |
+          docker pull postgres:16-alpine
+          docker pull rabbitmq:3.13-management-alpine
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Run E2E Tests
+        run: |
+          dotnet test tests/CashFlow.E2ETests \
+            --no-restore \
+            --configuration Release \
+            --logger "trx;LogFileName=e2e-results.trx" \
+            --results-directory ./test-results/e2e \
+            -- xunit.timeout=300000
+        env:
+          DOCKER_HOST: unix:///var/run/docker.sock
+          ASPIRE_ALLOW_UNSECURED_TRANSPORT: "true"
+        timeout-minutes: 15
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e2e-test-results
+          path: ./test-results/e2e
+
+  # -----------------------------------------------
+  # JOB 7: Scan de Seguranca
+  # -----------------------------------------------
+  security-scan:
+    name: Security Scan (Trivy)
+    runs-on: ubuntu-latest
+    needs: [integration-tests, architecture-tests]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner (filesystem)
+        uses: aquasecurity/trivy-action@0.30.0
+        with:
+          scan-type: "fs"
+          scan-ref: "."
+          format: "sarif"
+          output: "trivy-results.sarif"
+          severity: "CRITICAL,HIGH"
+          ignore-unfixed: true
+
+      - name: Upload Trivy results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: "trivy-results.sarif"
+

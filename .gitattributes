@@ -1,0 +1,6 @@
+# Normalizar line endings - CRLF no checkout (conforme .editorconfig)
+* text=auto eol=crlf
+
+# Shell scripts devem sempre usar LF (nao CRLF)
+*.sh text eol=lf
+.githooks/* text eol=lf

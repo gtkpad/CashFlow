@@ -1,0 +1,25 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+      "principalId": {
+        "value": "${AZURE_PRINCIPAL_ID}"
+      },
+      "gateway_secret": {
+        "value": "${AZURE_GATEWAY_SECRET}"
+      },
+      "jwt_signing_key": {
+        "value": "${AZURE_JWT_SIGNING_KEY}"
+      },
+      "messaging_password": {
+        "value": "${AZURE_MESSAGING_PASSWORD}"
+      },
+      "environmentName": {
+        "value": "${AZURE_ENV_NAME}"
+      },
+      "location": {
+        "value": "${AZURE_LOCATION}"
+      }
+    }
+  }
+  

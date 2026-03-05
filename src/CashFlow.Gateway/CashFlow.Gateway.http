@@ -1,0 +1,82 @@
+@host = {{host}}
+
+##########################################################
+# Identity (public - no auth required)
+##########################################################
+
+### Register a new user
+POST {{host}}/api/identity/register
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}"
+}
+
+### Login
+POST {{host}}/api/identity/login
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}"
+}
+
+### Refresh token
+POST {{host}}/api/identity/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "REPLACE_WITH_REFRESH_TOKEN"
+}
+
+##########################################################
+# Transactions (requires Bearer token)
+##########################################################
+
+### Create a Credit transaction
+POST {{host}}/api/v1/transactions/
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "referenceDate": "2026-03-05",
+  "type": 1,
+  "amount": 1500.00,
+  "currency": "BRL",
+  "description": "Venda de produto X",
+  "createdBy": "sistema-vendas"
+}
+
+### Create a Debit transaction
+POST {{host}}/api/v1/transactions/
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "referenceDate": "2026-03-05",
+  "type": 2,
+  "amount": 350.75,
+  "currency": "BRL",
+  "description": "Pagamento fornecedor Y",
+  "createdBy": "sistema-compras"
+}
+
+### Get transaction by ID
+GET {{host}}/api/v1/transactions/00000000-0000-0000-0000-000000000000
+Authorization: Bearer {{token}}
+
+##########################################################
+# Consolidation (requires Bearer token)
+##########################################################
+
+### Get daily balance
+GET {{host}}/api/v1/consolidation/2026-03-05
+Authorization: Bearer {{token}}
+
+##########################################################
+# Infrastructure
+##########################################################
+
+### Health check
+GET {{host}}/health
