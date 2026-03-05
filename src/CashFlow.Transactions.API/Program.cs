@@ -19,6 +19,9 @@ builder.Services.AddDbContext<TransactionsDbContext>((sp, options) =>
 });
 builder.EnrichNpgsqlDbContext<TransactionsDbContext>();
 
+builder.Services.AddHealthChecks()
+    .AddDbContextCheck<TransactionsDbContext>("transactions-db", tags: ["ready"]);
+
 builder.Services.AddMassTransit(x =>
 {
     x.AddEntityFrameworkOutbox<TransactionsDbContext>(o =>

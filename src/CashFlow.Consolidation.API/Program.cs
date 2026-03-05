@@ -12,6 +12,9 @@ builder.AddServiceDefaults();
 
 builder.AddNpgsqlDbContext<ConsolidationDbContext>("consolidation-db");
 
+builder.Services.AddHealthChecks()
+    .AddDbContextCheck<ConsolidationDbContext>("consolidation-db", tags: ["ready"]);
+
 builder.Services.AddMassTransit(x =>
 {
     x.AddConsumer<TransactionCreatedConsumer, TransactionCreatedConsumerDefinition>();
