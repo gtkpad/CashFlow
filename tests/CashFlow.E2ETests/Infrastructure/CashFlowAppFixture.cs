@@ -16,7 +16,6 @@ public class CashFlowAppFixture : IAsyncLifetime
     /// </summary>
     public static readonly TimeSpan StartupTimeout = TimeSpan.FromMinutes(5);
 
-
     public async Task InitializeAsync()
     {
         // Pattern from Context7 Aspire.Hosting.Testing docs:

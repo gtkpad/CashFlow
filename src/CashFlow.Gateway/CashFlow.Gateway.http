@@ -1,5 +1,5 @@
 @host = http://localhost:5032
-@token = PASTE_YOUR_BEARER_TOKEN_HERE
+@token = BEARER_TOKEN
 
 ##########################################################
 # Identity (public - no auth required)

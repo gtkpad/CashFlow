@@ -49,7 +49,8 @@ public class TransactionFlowTests(CashFlowAppFixture fixture)
             action: async () =>
             {
                 var resp = await client.GetAsync($"/api/v1/consolidation/{today:yyyy-MM-dd}");
-                if (!resp.IsSuccessStatusCode) return null;
+                if (!resp.IsSuccessStatusCode)
+                    return null;
                 return await resp.Content.ReadFromJsonAsync<DailyBalanceResponse>(JsonOptions);
             },
             predicate: b => b is not null && b.TransactionCount >= 1);
@@ -104,7 +105,8 @@ public class TransactionFlowTests(CashFlowAppFixture fixture)
             action: async () =>
             {
                 var resp = await client.GetAsync($"/api/v1/consolidation/{today:yyyy-MM-dd}");
-                if (!resp.IsSuccessStatusCode) return null;
+                if (!resp.IsSuccessStatusCode)
+                    return null;
                 return await resp.Content.ReadFromJsonAsync<DailyBalanceResponse>(JsonOptions);
             },
             predicate: b => b is not null && b.TransactionCount >= 2);
