@@ -12,15 +12,14 @@ public static class DomainEventMapper
         _ => null
     };
 
-    private static object MapTransactionCreated(TransactionCreated e) => new
-    {
-        TransactionId = e.TransactionId.Value,
-        MerchantId = e.MerchantId.Value,
-        ReferenceDate = e.ReferenceDate,
-        TransactionType = e.Type.ToString(),
-        Amount = e.Value.Amount,
-        Currency = e.Value.Currency
-    };
+    private record TransactionCreatedEvent(
+        Guid TransactionId, Guid MerchantId, DateOnly ReferenceDate,
+        string TransactionType, decimal Amount, string Currency) : ITransactionCreated;
+
+    private static ITransactionCreated MapTransactionCreated(TransactionCreated e) =>
+        new TransactionCreatedEvent(
+            e.TransactionId.Value, e.MerchantId.Value, e.ReferenceDate,
+            e.Type.ToString(), e.Value.Amount, e.Value.Currency);
 
     internal static Type? GetIntegrationEventType(IDomainEvent domainEvent) => domainEvent switch
     {
