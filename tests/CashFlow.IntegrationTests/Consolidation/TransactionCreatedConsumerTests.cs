@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.OutputCaching;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using NSubstitute;
+using CashFlow.ServiceDefaults;
 
 namespace CashFlow.IntegrationTests.Consolidation;
 
@@ -29,6 +30,8 @@ public class TransactionCreatedConsumerTests : IAsyncLifetime
         services.AddScoped<IDailySummaryRepository, DailySummaryRepository>();
         services.AddSingleton(Substitute.For<IOutputCacheStore>());
         services.AddLogging();
+        services.AddMetrics();
+        services.AddSingleton<CashFlowMetrics>();
 
         // Register consumer WITHOUT definition to avoid Outbox middleware
         // (InMemory DB doesn't support the transaction scope required by EF Outbox)

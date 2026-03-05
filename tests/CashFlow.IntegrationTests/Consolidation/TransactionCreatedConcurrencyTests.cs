@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.OutputCaching;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using NSubstitute;
+using CashFlow.ServiceDefaults;
 using Testcontainers.PostgreSql;
 
 namespace CashFlow.IntegrationTests.Consolidation;
@@ -40,6 +41,8 @@ public class TransactionCreatedConcurrencyTests : IAsyncLifetime
         services.AddScoped<IDailySummaryRepository, DailySummaryRepository>();
         services.AddSingleton(Substitute.For<IOutputCacheStore>());
         services.AddLogging();
+        services.AddMetrics();
+        services.AddSingleton<CashFlowMetrics>();
 
         // Register consumer WITH definition to activate retry/partitioner.
         // Include EF outbox configuration so the definition's UseEntityFrameworkOutbox works.

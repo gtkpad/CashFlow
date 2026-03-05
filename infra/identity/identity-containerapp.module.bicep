@@ -24,6 +24,10 @@ param env_outputs_azure_container_registry_endpoint string
 
 param env_outputs_azure_container_registry_managed_identity_id string
 
+param applicationinsights_connection_string string = ''
+
+param otel_service_version string = '1.0.0'
+
 resource identity 'Microsoft.App/containerApps@2025-02-02-preview' = {
   name: 'identity'
   location: location
@@ -111,6 +115,14 @@ resource identity 'Microsoft.App/containerApps@2025-02-02-preview' = {
             {
               name: 'Jwt__SigningKey'
               secretRef: 'jwt--signingkey'
+            }
+            {
+              name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
+              value: applicationinsights_connection_string
+            }
+            {
+              name: 'OTEL_SERVICE_VERSION'
+              value: otel_service_version
             }
             {
               name: 'AZURE_CLIENT_ID'

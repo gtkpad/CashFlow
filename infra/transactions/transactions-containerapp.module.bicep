@@ -27,6 +27,10 @@ param env_outputs_azure_container_registry_endpoint string
 
 param env_outputs_azure_container_registry_managed_identity_id string
 
+param applicationinsights_connection_string string = ''
+
+param otel_service_version string = '1.0.0'
+
 resource transactions 'Microsoft.App/containerApps@2025-02-02-preview' = {
   name: 'transactions'
   location: location
@@ -146,6 +150,14 @@ resource transactions 'Microsoft.App/containerApps@2025-02-02-preview' = {
             {
               name: 'Gateway__Secret'
               secretRef: 'gateway--secret'
+            }
+            {
+              name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
+              value: applicationinsights_connection_string
+            }
+            {
+              name: 'OTEL_SERVICE_VERSION'
+              value: otel_service_version
             }
             {
               name: 'AZURE_CLIENT_ID'

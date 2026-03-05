@@ -1,10 +1,13 @@
+using System.Diagnostics.Metrics;
+using System.Security.Claims;
 using CashFlow.Gateway.Middleware;
+using CashFlow.ServiceDefaults;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
-using System.Security.Claims;
 
 namespace CashFlow.UnitTests.Gateway;
 
@@ -20,7 +23,13 @@ public class AuthMiddlewareTests
                 : [])
             .Build();
 
-        return new AuthMiddleware(_next, config, Substitute.For<ILogger<AuthMiddleware>>());
+        var meterFactory = new ServiceCollection()
+            .AddMetrics()
+            .BuildServiceProvider()
+            .GetRequiredService<IMeterFactory>();
+
+        return new AuthMiddleware(_next, config, Substitute.For<ILogger<AuthMiddleware>>(),
+            new CashFlowMetrics(meterFactory));
     }
 
     [Fact]
@@ -93,6 +102,20 @@ public class AuthMiddlewareTests
 
         context.Request.Headers["X-Gateway-Secret"].ToString().Should().Be("my-gw-secret");
         await _next.Received(1).Invoke(context);
+    }
+
+    [Fact]
+    public async Task InvokeAsync_InvalidToken_ShouldReturn401()
+    {
+        var middleware = CreateMiddleware();
+        var context = new DefaultHttpContext();
+        context.Request.Path = "/api/transactions";
+        context.Request.Headers["Authorization"] = "Bearer invalid-token";
+
+        await middleware.InvokeAsync(context);
+
+        context.Response.StatusCode.Should().Be(StatusCodes.Status401Unauthorized);
+        await _next.DidNotReceive().Invoke(context);
     }
 
     [Fact]

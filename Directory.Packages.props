@@ -46,6 +46,8 @@
         <PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.14.0" />
         <PackageVersion Include="OpenTelemetry.Instrumentation.Http" Version="1.14.0" />
         <PackageVersion Include="OpenTelemetry.Instrumentation.Runtime" Version="1.14.0" />
+        <PackageVersion Include="Azure.Monitor.OpenTelemetry.AspNetCore" Version="1.4.0" />
+        <PackageVersion Include="OpenTelemetry.Instrumentation.EntityFrameworkCore" Version="1.14.0-beta.1" />
 
         <!-- Testing -->
         <PackageVersion Include="coverlet.collector" Version="6.0.4" />

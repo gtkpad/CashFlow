@@ -71,6 +71,11 @@ public static class AuthHelper
             return sub.GetString()
                    ?? throw new InvalidOperationException("sub claim is null");
 
+        // JwtSecurityTokenHandler maps ClaimTypes.NameIdentifier to "nameid" in JWT JSON
+        if (doc.RootElement.TryGetProperty("nameid", out var nameIdShort))
+            return nameIdShort.GetString()
+                   ?? throw new InvalidOperationException("nameid claim is null");
+
         // ASP.NET Identity may use the full claim URI
         if (doc.RootElement.TryGetProperty(
                 "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier",

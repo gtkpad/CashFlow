@@ -1,9 +1,12 @@
+using System.Diagnostics.Metrics;
 using CashFlow.Domain.SharedKernel;
 using CashFlow.Domain.Transactions;
+using CashFlow.ServiceDefaults;
 using CashFlow.Transactions.API.Features.CreateTransaction;
 using CashFlow.Transactions.API.Persistence;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
 
@@ -24,8 +27,14 @@ public class CreateTransactionHandlerTests
             .Options;
         _dbContext = new TransactionsDbContext(options);
 
+        var meterFactory = new ServiceCollection()
+            .AddMetrics()
+            .BuildServiceProvider()
+            .GetRequiredService<IMeterFactory>();
+
         _handler = new CreateTransactionHandler(_repository, _dbContext,
-            Substitute.For<ILogger<CreateTransactionHandler>>());
+            Substitute.For<ILogger<CreateTransactionHandler>>(),
+            new CashFlowMetrics(meterFactory));
     }
 
     [Fact]

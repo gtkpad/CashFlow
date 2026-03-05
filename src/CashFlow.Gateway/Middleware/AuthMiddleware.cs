@@ -1,6 +1,9 @@
+using CashFlow.ServiceDefaults;
+
 namespace CashFlow.Gateway.Middleware;
 
-public class AuthMiddleware(RequestDelegate next, IConfiguration configuration, ILogger<AuthMiddleware> logger)
+public class AuthMiddleware(RequestDelegate next, IConfiguration configuration,
+    ILogger<AuthMiddleware> logger, CashFlowMetrics metrics)
 {
     private static readonly string[] _publicPaths = ["/api/identity/"];
 
@@ -23,9 +26,12 @@ public class AuthMiddleware(RequestDelegate next, IConfiguration configuration, 
 
         if (context.User.Identity?.IsAuthenticated != true)
         {
-            logger.LogWarning("Unauthorized request to {Path} from {RemoteIp}",
-                path, context.Connection.RemoteIpAddress);
+            var hasToken = context.Request.Headers.ContainsKey("Authorization");
+            var reason = hasToken ? "unauthorized" : "missing_token";
+            logger.LogWarning("Unauthorized request to {Path} from {RemoteIp}, reason={Reason}",
+                path, context.Connection.RemoteIpAddress, reason);
             context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            metrics.RecordAuthFailure(reason);
             return;
         }
 
