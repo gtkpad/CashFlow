@@ -18,6 +18,7 @@ builder.Services.AddHealthChecks()
 builder.Services.AddMassTransit(x =>
 {
     x.AddConsumer<TransactionCreatedConsumer, TransactionCreatedConsumerDefinition>();
+    x.AddConsumer<TransactionFaultConsumer>();
 
     x.AddEntityFrameworkOutbox<ConsolidationDbContext>(o =>
     {

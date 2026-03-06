@@ -80,7 +80,7 @@ resource consolidationLatencyAlert 'Microsoft.Insights/scheduledQueryRules@2023-
     criteria: {
       allOf: [
         {
-          query: 'customMetrics | where name == "cashflow.consolidation.processing_duration" | summarize p95 = percentile(value, 95) by bin(timestamp, 1m) | where p95 > 200'
+          query: 'customMetrics | where name == "cashflow.consolidation.processing_duration_ms" | summarize p95 = percentile(value, 95) by bin(timestamp, 1m) | where p95 > 200'
           timeAggregation: 'Count'
           operator: 'GreaterThan'
           threshold: 5
@@ -152,7 +152,7 @@ resource dlqDepthAlert 'Microsoft.Insights/scheduledQueryRules@2023-03-15-previe
     criteria: {
       allOf: [
         {
-          query: 'customMetrics | where name == "cashflow.messaging.dlq_depth" | summarize MaxDepth = max(value) by bin(timestamp, 1m) | where MaxDepth > 0'
+          query: 'customMetrics | where name == "cashflow.messaging.dlq_faults" | summarize FaultCount = sum(valueSum) by bin(timestamp, 1m) | where FaultCount > 0'
           timeAggregation: 'Count'
           operator: 'GreaterThan'
           threshold: 0
@@ -263,7 +263,7 @@ resource eventualConsistencyLatencyAlert 'Microsoft.Insights/scheduledQueryRules
     criteria: {
       allOf: [
         {
-          query: 'customMetrics | where name == "cashflow.consolidation.eventual_consistency_delay" | summarize p95 = percentile(value, 95) by bin(timestamp, 1m) | where p95 > 5000'
+          query: 'customMetrics | where name == "cashflow.consolidation.eventual_consistency_ms" | summarize p95 = percentile(value, 95) by bin(timestamp, 1m) | where p95 > 5000'
           timeAggregation: 'Count'
           operator: 'GreaterThan'
           threshold: 5

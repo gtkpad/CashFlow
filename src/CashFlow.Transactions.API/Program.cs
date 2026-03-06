@@ -14,7 +14,9 @@ builder.AddServiceDefaults();
 
 builder.Services.AddDbContext<TransactionsDbContext>((sp, options) =>
 {
-    options.UseNpgsql(builder.Configuration.GetConnectionString("transactions-db"));
+    options.UseNpgsql(
+        builder.Configuration.GetConnectionString("transactions-db"),
+        npgsqlOptions => npgsqlOptions.EnableRetryOnFailure(maxRetryCount: 3));
     options.AddInterceptors(sp.GetRequiredService<DomainEventInterceptor>());
 });
 builder.EnrichAzureNpgsqlDbContext<TransactionsDbContext>();

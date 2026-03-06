@@ -11,13 +11,13 @@
 
 A configuração de resiliência é centralizada no `ServiceDefaults` via `AddStandardResilienceHandler()` nos HttpClients globais (usado pelo YARP para backends internos), com: retry exponencial (3 tentativas, 500ms de delay), circuit breaker (failure ratio 50%, minimum throughput 10, timeout de 5s por tentativa). O Npgsql usa retry policy configurada na connection string (`Retry Max Count=3; Retry Connection Timeout=5`).
 
-> **Nota**: O retry do consumer MassTransit (`UseMessageRetry`) está configurado na `TransactionCreatedConsumerDefinition` ([ADR-002](002-messaging.md)). O `UseDelayedRedelivery()` para Dead Letter Queue está documentado no [ADR-007](007-dlq.md).
+> **Nota**: O retry do consumer MassTransit (`UseMessageRetry`) está configurado na `TransactionCreatedConsumerDefinition` ([ADR-002](002-messaging.md)). Após esgotar retries, mensagens são movidas para a error queue — ver [ADR-007](007-dlq.md).
 
 ## Trade-offs
 
 | Canal | Mecanismo | Cobertura |
 |---|---|---|
-| Mensageria (MassTransit) | `UseMessageRetry` + `UseDelayedRedelivery` | Falhas transitórias + persistentes |
+| Mensageria (MassTransit) | `UseMessageRetry` + error queue (DLQ) | Falhas transitórias + persistentes |
 | Banco (Npgsql) | Connection string retry policy | Falhas de conexão transitórias |
 | HTTP (YARP → backends) | `AddStandardResilienceHandler()` (Polly v8) | Retry + Circuit Breaker + Timeout |
 | RabbitMQ (conexão) | MassTransit `AutoRecover` | Reconexão automática |

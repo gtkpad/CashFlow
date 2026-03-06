@@ -74,7 +74,7 @@ public class TransactionCreatedConsumerDefinition
         IRegistrationContext context)
     {
         // MIDDLEWARE ORDER IS CRITICAL (LIFO pipeline):
-        // Outermost -> Innermost: CircuitBreaker -> Redelivery -> Retry -> Outbox
+        // Outermost -> Innermost: CircuitBreaker -> Retry -> Outbox
         var partition = endpointConfigurator.CreatePartitioner(8);
 
         consumerConfigurator.Message<ITransactionCreated>(
@@ -88,12 +88,6 @@ public class TransactionCreatedConsumerDefinition
             cb.ActiveThreshold = 10;
             cb.ResetInterval = TimeSpan.FromMinutes(5);
         });
-
-        endpointConfigurator.UseDelayedRedelivery(r =>
-            r.Intervals(
-                TimeSpan.FromMinutes(5),
-                TimeSpan.FromMinutes(15),
-                TimeSpan.FromMinutes(60)));
 
         endpointConfigurator.UseMessageRetry(r =>
         {

@@ -394,7 +394,7 @@ sequenceDiagram
 | **Consolidation API crash** | Mensagens ficam na fila (unacked) | RabbitMQ redistribui ao reiniciar |
 | **DB do consolidation fora** | Consumer falha no commit | `UseMessageRetry` com backoff exponencial |
 | **DB de transactions fora** | API retorna 503 | HttpClient standard resilience handler (Polly) abre circuit breaker |
-| **Mensagem corrompida** | Desserialização falha | Dead Letter Queue (DLQ) via `UseDelayedRedelivery()` |
+| **Mensagem corrompida** | Desserialização falha | Error queue (`*_error`) + alerta via `Fault<T>` consumer |
 | **Mensagem duplicada** | `InboxState` detecta `MessageId` repetido | Consumer NÃO é invocado → skip automático |
 
 ---

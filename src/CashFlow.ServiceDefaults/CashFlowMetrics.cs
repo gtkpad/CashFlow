@@ -12,6 +12,7 @@ public sealed class CashFlowMetrics
     private readonly Histogram<double> _consolidationProcessingDuration;
     private readonly Histogram<double> _eventualConsistency;
     private readonly Counter<long> _authFailures;
+    private readonly Counter<long> _dlqFaults;
 
     public CashFlowMetrics(IMeterFactory meterFactory)
     {
@@ -40,6 +41,10 @@ public sealed class CashFlowMetrics
         _authFailures = meter.CreateCounter<long>(
             "cashflow.gateway.auth_failures", "failures",
             "Number of authentication failures");
+
+        _dlqFaults = meter.CreateCounter<long>(
+            "cashflow.messaging.dlq_faults", "faults",
+            "Messages moved to error queue after exhausting all retries");
     }
 
     public void RecordTransactionCreated(string type, string currency)
@@ -76,5 +81,12 @@ public sealed class CashFlowMetrics
     {
         _authFailures.Add(1,
             new KeyValuePair<string, object?>("reason", reason));
+    }
+
+    public void RecordDlqFault(string messageType, string exceptionType)
+    {
+        _dlqFaults.Add(1,
+            new KeyValuePair<string, object?>("message_type", messageType),
+            new KeyValuePair<string, object?>("exception_type", exceptionType));
     }
 }

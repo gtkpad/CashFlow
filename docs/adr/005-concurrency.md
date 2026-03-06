@@ -42,8 +42,8 @@ Com UsePartitioner(8, key=(MerchantId:ReferenceDate)):
 A `TransactionCreatedConsumerDefinition` configura a pipeline de middlewares na ordem LIFO (último registrado = mais externo):
 
 1. **`UsePartitioner`** (mais externo) — roteia para slot por `(MerchantId:ReferenceDate)` com 8 slots antes de qualquer retry. Elimina `DbUpdateConcurrencyException` de 30-50% para ~0%.
-2. **`UseDelayedRedelivery`** — envia para DLQ com delay exponencial (5m, 15m, 60m) após esgotar retries imediatos. Requer plugin `rabbitmq_delayed_message_exchange` ([ADR-007](007-dlq.md)).
-3. **`UseMessageRetry`** — retry exponencial com jitter de 50ms (5 tentativas, 100ms a 30s) para casos residuais.
+2. **`UseCircuitBreaker`** — protege contra falhas em cascata (trip threshold 15, reset 5min).
+3. **`UseMessageRetry`** — retry exponencial com jitter de 50ms (5 tentativas, 100ms a 30s) para casos residuais. Após esgotar retries, a mensagem é movida para a error queue ([ADR-007](007-dlq.md)).
 4. **`UseEntityFrameworkOutbox`** (mais interno, último registrado) — gerencia a TX que envolve o consumer. DEVE ser o último para que InboxState check, lógica de negócio e COMMIT ocorram numa única transação.
 
 ### Consumer com Lógica de Negócio

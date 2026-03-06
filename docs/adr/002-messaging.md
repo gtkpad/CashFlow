@@ -73,7 +73,7 @@ No `Program.cs` da Transactions API, o MassTransit é configurado com `AddEntity
 
 No `Program.cs` da Consolidation API, o MassTransit registra o `TransactionCreatedConsumer` com sua `ConsumerDefinition`, configura o Consumer Outbox (que inclui Inbox) com EF Core via `AddEntityFrameworkOutbox<ConsolidationDbContext>` (sem `UseBusOutbox()` — consumer não é produtor primário), e usa RabbitMQ como transport. O consumer roda como `IHostedService` embutido na API.
 
-A `TransactionCreatedConsumerDefinition` configura a pipeline canônica completa (documentada no [ADR-005](005-concurrency.md)): `UseCircuitBreaker` → `UseDelayedRedelivery` (5min, 15min, 60min) → `UseMessageRetry` com retry exponencial (5 tentativas, 100ms-30s, jitter 50ms, trata apenas `DbUpdateConcurrencyException`) → `UseEntityFrameworkOutbox` como middleware mais interno (gerencia a TX que envolve o consumer). O `UsePartitioner(8)` é configurado em nível de mensagem no consumer.
+A `TransactionCreatedConsumerDefinition` configura a pipeline canônica completa (documentada no [ADR-005](005-concurrency.md)): `UseCircuitBreaker` → `UseMessageRetry` com retry exponencial (5 tentativas, 100ms-30s, jitter 50ms, trata apenas `DbUpdateConcurrencyException`) → `UseEntityFrameworkOutbox` como middleware mais interno (gerencia a TX que envolve o consumer). Após esgotar retries, a mensagem é movida para a error queue ([ADR-007](007-dlq.md)). O `UsePartitioner(8)` é configurado em nível de mensagem no consumer.
 
 ### DbContext com Tabelas do MassTransit
 
@@ -89,7 +89,7 @@ Ambos os DbContexts incluem as entidades do MassTransit em `OnModelCreating`: o 
 | Outbox Publisher | `IHostedService` embutido (Delivery Service) | Worker process separado + polling loop manual (~100 linhas) |
 | Inbox/Idempotência | `InboxState` automático por endpoint + `MessageId` | Tabela `inbox_messages` + lógica de dedup manual (~50 linhas) |
 | Lock distribuído | `OutboxState` com lock nativo (PostgreSQL advisory locks) | Implementação manual de row-level lock |
-| Retries | Declarativo (`UseMessageRetry`) + delayed redelivery | `try/catch` + loop manual |
+| Retries | Declarativo (`UseMessageRetry`) + error queue (DLQ) | `try/catch` + loop manual |
 | Processos necessários | **2** (API Transactions + API Consolidation) | **4** (API + Outbox Worker + Worker + API Consolidation) |
 | Linhas de código | ~30 linhas de configuração | ~300+ linhas de infraestrutura |
 
