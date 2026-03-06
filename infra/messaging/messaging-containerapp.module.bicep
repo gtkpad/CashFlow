@@ -53,7 +53,7 @@ resource messaging 'Microsoft.App/containerApps@2025-01-01' = {
           volumeMounts: [
             {
               volumeName: 'v0'
-              mountPath: '/var/lib/rabbitmq'
+              mountPath: '/var/lib/rabbitmq/mnesia'
             }
           ]
         }
