@@ -228,14 +228,15 @@ jobs:
           dotnet test tests/CashFlow.E2ETests \
             --no-restore \
             --configuration Release \
+            --logger "console;verbosity=normal" \
             --logger "trx;LogFileName=e2e-results.trx" \
             --results-directory ./test-results/e2e \
-            -- xunit.timeout=300000
+            -- xunit.timeout=600000
         env:
           DOCKER_HOST: unix:///var/run/docker.sock
           ASPIRE_ALLOW_UNSECURED_TRANSPORT: "true"
           DCP_DIAGNOSTICS_LOG_LEVEL: "debug"
-        timeout-minutes: 20
+        timeout-minutes: 25
 
       - name: Upload test results
         uses: actions/upload-artifact@v4

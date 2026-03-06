@@ -14,7 +14,8 @@ var serviceVersion = builder.Configuration["OTEL_SERVICE_VERSION"] ?? "1.0.0-dev
 // Infrastructure
 // Em produção: Azure Database for PostgreSQL Flexible Server
 // Em dev local: container PostgreSQL (RunAsContainer)
-var skipDevResources = builder.Configuration["AppHost:SkipDevResources"] == "true";
+// Skip dev-only resources in E2E tests (set by CashFlowAppFixture before CreateAsync)
+var skipDevResources = Environment.GetEnvironmentVariable("CASHFLOW_E2E_TESTING") == "true";
 
 var postgres = builder.AddAzurePostgresFlexibleServer("postgres")
     .RunAsContainer(c =>

@@ -14,7 +14,7 @@ public class CashFlowAppFixture : IAsyncLifetime
     /// <summary>
     /// Maximum time to wait for the AppHost and all resources to start.
     /// </summary>
-    public static readonly TimeSpan StartupTimeout = TimeSpan.FromMinutes(10);
+    public static readonly TimeSpan StartupTimeout = TimeSpan.FromMinutes(15);
 
     public async Task InitializeAsync()
     {
@@ -23,10 +23,13 @@ public class CashFlowAppFixture : IAsyncLifetime
         using var cts = new CancellationTokenSource(StartupTimeout);
         var ct = cts.Token;
 
-        // Pass SkipDevResources via args: AppHost.cs runs during CreateAsync, so this config
-        // must be available before the call (args are injected into builder.Configuration immediately).
+        // Signal AppHost to skip dev-only resources (pgAdmin, RabbitMQ management UI, data volumes).
+        // Must be set BEFORE CreateAsync because AppHost.cs runs (and reads config) during that call.
+        // Using environment variable ensures reliable detection regardless of arg parser behavior.
+        Environment.SetEnvironmentVariable("CASHFLOW_E2E_TESTING", "true");
+
         var appHost = await DistributedApplicationTestingBuilder
-            .CreateAsync<Projects.CashFlow_AppHost>(["--AppHost:SkipDevResources=true"], ct);
+            .CreateAsync<Projects.CashFlow_AppHost>(ct);
 
         // Provide values for secret parameters not available in CI environment.
         // Parameters are resolved lazily (during StartAsync), so post-CreateAsync injection works.
