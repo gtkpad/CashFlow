@@ -1,0 +1,187 @@
+{
+  "version": "Notebook/1.0",
+  "items": [
+    {
+      "type": 1,
+      "content": {
+        "json": "# CashFlow NFR Dashboard\nMonitoring dashboard for Non-Functional Requirements across all CashFlow services."
+      },
+      "name": "header"
+    },
+    {
+      "type": 9,
+      "content": {
+        "version": "KqlParameterItem/1.0",
+        "parameters": [
+          {
+            "id": "time-range",
+            "version": "KqlParameterItem/1.0",
+            "name": "TimeRange",
+            "type": 4,
+            "isRequired": true,
+            "typeSettings": {
+              "selectableValues": [
+                { "durationMs": 3600000, "createdTime": "2024-01-01T00:00:00Z", "isInitialTime": false, "grain": 1, "useDashboardTimeRange": false },
+                { "durationMs": 86400000 },
+                { "durationMs": 604800000 },
+                { "durationMs": 2592000000 }
+              ],
+              "allowCustom": true
+            },
+            "value": { "durationMs": 86400000 }
+          }
+        ]
+      },
+      "name": "parameters"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "## NFR-1: Health Check Status & Uptime"
+      },
+      "name": "nfr1-header"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "requests\n| where name has \"health\"\n| where timestamp {TimeRange}\n| summarize Total = count(), Healthy = countif(success == true) by cloud_RoleName\n| extend UptimePct = round((Healthy * 100.0) / Total, 2)\n| project Service = cloud_RoleName, Total, Healthy, Failed = Total - Healthy, ['Uptime %'] = UptimePct\n| order by Service asc",
+        "size": 1,
+        "title": "Service Health & Uptime",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "visualization": "table",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "Uptime %",
+              "formatter": 18,
+              "formatOptions": {
+                "thresholdsOptions": "icons",
+                "thresholdsGrid": [
+                  { "operator": ">=", "thresholdValue": "99.9", "representation": "success", "text": "{0}%" },
+                  { "operator": ">=", "thresholdValue": "99", "representation": "warning", "text": "{0}%" },
+                  { "operator": "Default", "representation": "critical", "text": "{0}%" }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "name": "nfr1-uptime-table"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "requests\n| where name has \"health\"\n| where timestamp {TimeRange}\n| summarize HealthyCount = countif(success == true), TotalCount = count() by cloud_RoleName, bin(timestamp, 5m)\n| extend UptimePct = round((HealthyCount * 100.0) / TotalCount, 2)\n| project timestamp, cloud_RoleName, UptimePct\n| order by timestamp asc",
+        "size": 0,
+        "title": "Health Check Timeline (per service)",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "visualization": "timechart"
+      },
+      "name": "nfr1-health-timeline"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "## NFR-2: Consolidation Throughput & Latency"
+      },
+      "name": "nfr2-header"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "customMetrics\n| where name == \"cashflow.consolidation.processing_duration\"\n| where timestamp {TimeRange}\n| summarize p50 = percentile(value, 50), p95 = percentile(value, 95), p99 = percentile(value, 99) by bin(timestamp, 5m)\n| project timestamp, ['p50 (ms)'] = round(p50, 1), ['p95 (ms)'] = round(p95, 1), ['p99 (ms)'] = round(p99, 1)\n| order by timestamp asc",
+        "size": 0,
+        "title": "Consolidation Processing Latency (p50/p95/p99)",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "visualization": "timechart"
+      },
+      "name": "nfr2-latency-chart"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "requests\n| where cloud_RoleName == \"consolidation\"\n| where name !has \"health\"\n| where timestamp {TimeRange}\n| summarize RequestCount = count() by bin(timestamp, 1m)\n| extend RequestsPerSec = round(RequestCount / 60.0, 1)\n| project timestamp, ['Requests/s'] = RequestsPerSec\n| order by timestamp asc",
+        "size": 0,
+        "title": "Consolidation Throughput (req/s)",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "visualization": "timechart"
+      },
+      "name": "nfr2-throughput-chart"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "## NFR-3: Event Processing & Consistency"
+      },
+      "name": "nfr3-header"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "let created = customMetrics\n| where name == \"cashflow.transactions.created\"\n| where timestamp {TimeRange}\n| summarize Created = sum(valueSum) by bin(timestamp, 5m);\nlet processed = customMetrics\n| where name == \"cashflow.consolidation.events_processed\"\n| where timestamp {TimeRange}\n| summarize Processed = sum(valueSum) by bin(timestamp, 5m);\ncreated\n| join kind=leftouter processed on timestamp\n| extend Delta = Created - coalesce(Processed, 0)\n| project timestamp, Created, Processed = coalesce(Processed, 0), Delta\n| order by timestamp asc",
+        "size": 0,
+        "title": "Production vs Consumption Delta",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "visualization": "timechart"
+      },
+      "name": "nfr3-delta-chart"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "customMetrics\n| where name == \"cashflow.messaging.dlq_depth\"\n| where timestamp {TimeRange}\n| summarize DLQDepth = max(value) by bin(timestamp, 5m)\n| project timestamp, ['DLQ Depth'] = DLQDepth\n| order by timestamp asc",
+        "size": 0,
+        "title": "Dead Letter Queue Depth",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "visualization": "timechart"
+      },
+      "name": "nfr3-dlq-chart"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "## NFR-4: Ingestion & Eventual Consistency"
+      },
+      "name": "nfr4-header"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "customMetrics\n| where name == \"cashflow.consolidation.events_processed\"\n| where timestamp {TimeRange}\n| summarize EventsPerMin = sum(valueSum) by bin(timestamp, 1m)\n| extend EventsPerSec = round(EventsPerMin / 60.0, 1)\n| project timestamp, ['Events/s'] = EventsPerSec\n| order by timestamp asc",
+        "size": 0,
+        "title": "Event Ingestion Rate (events/s)",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "visualization": "timechart"
+      },
+      "name": "nfr4-ingestion-chart"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "customMetrics\n| where name == \"cashflow.consolidation.eventual_consistency_delay\"\n| where timestamp {TimeRange}\n| summarize p50 = percentile(value, 50), p95 = percentile(value, 95) by bin(timestamp, 5m)\n| project timestamp, ['p50 (ms)'] = round(p50, 1), ['p95 (ms)'] = round(p95, 1)\n| order by timestamp asc",
+        "size": 0,
+        "title": "Eventual Consistency Delay (p50/p95)",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "visualization": "timechart"
+      },
+      "name": "nfr4-consistency-chart"
+    }
+  ],
+  "$schema": "https://github.com/Microsoft/Application-Insights-Workbooks/blob/master/schema/workbook.json"
+}
