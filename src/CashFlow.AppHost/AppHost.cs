@@ -49,19 +49,12 @@ if (!skipDevResources)
     rabbitmq.WithManagementPlugin();
 }
 
-// Em E2E/CI, usar /alive para health probing do Aspire nos serviços com MassTransit.
-// O /health inclui checks do bus MassTransit que podem demorar indefinidamente para
-// reportar Healthy, causando timeout do StartAsync. O /alive usa apenas o check "self"
-// (tagged "live") que retorna Healthy imediatamente após o app iniciar.
-var massTransitHealthPath = skipDevResources ? "/alive" : "/health";
-
 // Services
 var identity = builder.AddProject<Projects.CashFlow_Identity_API>("identity")
     .WithReference(identityDb)
     .WithEnvironment("Identity__Audience", "cashflow-api")
     .WithEnvironment("Jwt__SigningKey", jwtSigningKey)
     .WithEnvironment("OTEL_SERVICE_VERSION", serviceVersion)
-    .WithHttpHealthCheck("/health")
     .WaitFor(identityDb);
 
 var transactions = builder.AddProject<Projects.CashFlow_Transactions_API>("transactions")
@@ -69,7 +62,6 @@ var transactions = builder.AddProject<Projects.CashFlow_Transactions_API>("trans
     .WithReference(rabbitmq)
     .WithEnvironment("Gateway__Secret", gatewaySecret)
     .WithEnvironment("OTEL_SERVICE_VERSION", serviceVersion)
-    .WithHttpHealthCheck(massTransitHealthPath)
     .WaitFor(transactionsDb)
     .WaitFor(rabbitmq);
 
@@ -78,12 +70,22 @@ var consolidation = builder.AddProject<Projects.CashFlow_Consolidation_API>("con
     .WithReference(rabbitmq)
     .WithEnvironment("Gateway__Secret", gatewaySecret)
     .WithEnvironment("OTEL_SERVICE_VERSION", serviceVersion)
-    .WithHttpHealthCheck(massTransitHealthPath)
     .WaitFor(consolidationDb)
     .WaitFor(rabbitmq);
 
+// Em dev local, usar WithHttpHealthCheck para que o DCP monitore readiness
+// e o Aspire Dashboard mostre o estado correto de cada serviço.
+// Em E2E/CI, omitir health check probes — o DCP health probing nunca transiciona
+// os serviços com MassTransit de Running para Healthy, bloqueando StartAsync.
+if (!skipDevResources)
+{
+    identity.WithHttpHealthCheck("/health");
+    transactions.WithHttpHealthCheck("/health");
+    consolidation.WithHttpHealthCheck("/health");
+}
+
 // Gateway
-builder.AddProject<Projects.CashFlow_Gateway>("gateway")
+var gateway = builder.AddProject<Projects.CashFlow_Gateway>("gateway")
     .WithReference(identity)
     .WithReference(transactions)
     .WithReference(consolidation)
@@ -91,10 +93,22 @@ builder.AddProject<Projects.CashFlow_Gateway>("gateway")
     .WithEnvironment("Jwt__SigningKey", jwtSigningKey)
     .WithEnvironment("Gateway__Secret", gatewaySecret)
     .WithEnvironment("OTEL_SERVICE_VERSION", serviceVersion)
-    .WithHttpHealthCheck("/health")
-    .WaitFor(identity)
-    .WaitFor(transactions)
-    .WaitFor(consolidation)
     .WithExternalHttpEndpoints();
+
+if (skipDevResources)
+{
+    // E2E/CI: esperar apenas Running (WaitForStart) em vez de Healthy (WaitFor).
+    // Sem WithHttpHealthCheck nos serviços, WaitFor bloquearia indefinidamente.
+    gateway.WaitForStart(identity);
+    gateway.WaitForStart(transactions);
+    gateway.WaitForStart(consolidation);
+}
+else
+{
+    gateway.WithHttpHealthCheck("/health");
+    gateway.WaitFor(identity);
+    gateway.WaitFor(transactions);
+    gateway.WaitFor(consolidation);
+}
 
 builder.Build().Run();
