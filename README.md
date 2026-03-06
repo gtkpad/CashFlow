@@ -70,7 +70,7 @@ O sistema adota uma arquitetura de **quatro serviços deployáveis independentes
 
 O isolamento de processos garante que a falha no serviço de consolidado **nunca** afete a disponibilidade do serviço de lançamentos — requisito crítico do sistema.
 
-Para detalhes completos, diagramas C4 e ADRs, consulte [`docs/architecture.md`](docs/architecture.md).
+Para detalhes completos, diagramas C4 e ADRs, consulte [`ARCHITECTURE.md`](ARCHITECTURE.md).
 
 ---
 
@@ -113,10 +113,8 @@ CashFlow.slnx
 │   ├── CashFlow.ArchitectureTests/       — Testes de dependência (NetArchTest)
 │   ├── CashFlow.E2ETests/               — Testes E2E com Aspire Testing
 │   └── load/                             — Testes de carga com k6
-└── docs/
-    ├── architecture.md                   — Documento de arquitetura (C4, ADRs, domínio)
-    ├── ci-pipeline.md                    — Documentação da pipeline de CI/CD
-    └── desafio.md                        — Descrição original do desafio
+├── ARCHITECTURE.md                        — Documento de arquitetura completo (C4, ADRs, domínio, NFRs)
+└── infra/                                 — Bicep modules para Azure Container Apps
 ```
 
 ---
@@ -367,7 +365,7 @@ Resposta:
 
 ## Decisões Arquiteturais
 
-As decisões estão documentadas como **Architecture Decision Records (ADRs)** em [`docs/architecture.md`](docs/architecture.md):
+As decisões estão documentadas como **Architecture Decision Records (ADRs)** em [`ARCHITECTURE.md`](ARCHITECTURE.md):
 
 | ADR | Decisão |
 |---|---|
@@ -380,6 +378,7 @@ As decisões estão documentadas como **Architecture Decision Records (ADRs)** e
 | **ADR-007** | Dead Letter Queue: Topologia de redelivery e recuperação operacional |
 | **ADR-008** | Alta Disponibilidade: Azure Container Apps + .NET Aspire |
 | **ADR-009** | Testes E2E com .NET Aspire Testing |
+| **ADR-010** | Handlers via DI Direto (sem MediatR) |
 
 ### Padrões Aplicados
 
@@ -424,6 +423,4 @@ O projeto possui pipelines automatizadas no GitHub Actions:
 
 | Documento | Descrição |
 |---|---|
-| [`docs/architecture.md`](docs/architecture.md) | Documento de arquitetura completo (C4, ADRs, domínio, NFRs) |
-| [`docs/ci-pipeline.md`](docs/ci-pipeline.md) | Documentação da pipeline de CI/CD |
-| [`docs/desafio.md`](docs/desafio.md) | Descrição original do desafio |
+| [`ARCHITECTURE.md`](ARCHITECTURE.md) | Documento de arquitetura completo (C4, ADRs, domínio, NFRs) |
