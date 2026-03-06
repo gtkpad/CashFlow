@@ -6,10 +6,9 @@ var jwtSigningKey = builder.AddParameter("jwt-signing-key", secret: true);
 var serviceVersion = builder.Configuration["OTEL_SERVICE_VERSION"] ?? "1.0.0-dev";
 var skipDevResources = Environment.GetEnvironmentVariable("CASHFLOW_E2E_TESTING") == "true";
 
-// Application Insights: só registrar o resource quando a connection string existir.
-// Em E2E/CI a variável não existe — um resource sem valor falha e cascata para todos os serviços.
-var appInsightsConnectionString = builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"];
-var appInsights = !string.IsNullOrEmpty(appInsightsConnectionString)
+// Application Insights: pular apenas em E2E testing (onde não há recurso AI).
+// Em produção/dev, o Aspire gera o parâmetro Bicep — a connection string é injetada no deploy.
+var appInsights = !skipDevResources
     ? builder.AddConnectionString("appinsights", "APPLICATIONINSIGHTS_CONNECTION_STRING")
     : null;
 
