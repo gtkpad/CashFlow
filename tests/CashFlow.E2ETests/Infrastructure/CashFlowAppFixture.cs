@@ -26,6 +26,10 @@ public class CashFlowAppFixture : IAsyncLifetime
         var appHost = await DistributedApplicationTestingBuilder
             .CreateAsync<Projects.CashFlow_AppHost>(ct);
 
+        // Provide values for secret parameters not available in CI environment
+        appHost.Configuration["Parameters:jwt-signing-key"] = "E2eTests_JwtSigningKey_AtLeast32Chars!!";
+        appHost.Configuration["Parameters:gateway-secret"] = "E2eTests_GatewaySecret";
+
         // Configure logging (recommended by Aspire testing docs)
         appHost.Services.AddLogging(logging =>
         {
