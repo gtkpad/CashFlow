@@ -684,7 +684,7 @@ curl -v https://<gateway-fqdn>/alive
 | `AllowAllAzureIps` firewall rule | Qualquer serviço Azure pode acessar o DB | Private endpoint + VNet injection | **P2** | Aberto |
 | RabbitMQ single-replica em LRS | SPOF na mensageria | Migrar para Azure Service Bus ou ZRS | **P2** | Aberto |
 | ACR Basic (sem geo-replicação) | Image pull falha se região cair | Upgrade para Premium | **P2** | Aberto |
-| Container Apps sem health probes Bicep | Plataforma não detecta unhealthy via /health e /alive | Adicionar probes nos módulos Bicep | **P1** | Aberto |
+| Container Apps sem health probes Bicep | Plataforma não detecta unhealthy via /health e /alive | Adicionar probes nos módulos Bicep | **P1** | Resolvido |
 | Sem VNet injection | Comunicação multitenant | Configurar VNet dedicada | **P2** | Aberto |
 
 #### Resolvido no Bicep (postgres.module.bicep)

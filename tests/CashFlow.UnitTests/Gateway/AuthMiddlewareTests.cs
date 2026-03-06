@@ -105,6 +105,19 @@ public class AuthMiddlewareTests
     }
 
     [Fact]
+    public async Task InvokeAsync_PublicPath_ShouldStillInjectGatewaySecret()
+    {
+        var middleware = CreateMiddleware("my-gw-secret");
+        var context = new DefaultHttpContext();
+        context.Request.Path = "/api/identity/login";
+
+        await middleware.InvokeAsync(context);
+
+        context.Request.Headers["X-Gateway-Secret"].ToString().Should().Be("my-gw-secret");
+        await _next.Received(1).Invoke(context);
+    }
+
+    [Fact]
     public async Task InvokeAsync_InvalidToken_ShouldReturn401()
     {
         var middleware = CreateMiddleware();

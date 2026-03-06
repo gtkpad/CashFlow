@@ -20,7 +20,6 @@ public class DailySummaryRepository(ConsolidationDbContext db) : IDailySummaryRe
 
     public Task Save(DailySummary summary, CancellationToken ct = default)
     {
-        db.DailySummaries.Update(summary);
         return Task.CompletedTask;
     }
 }

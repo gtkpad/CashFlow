@@ -18,6 +18,9 @@ param postgres_outputs_hostname string
 @secure()
 param jwt_signing_key_value string
 
+@secure()
+param gateway_secret_value string
+
 param identity_identity_outputs_clientid string
 
 param identity_identity_outputs_principalname string
@@ -39,6 +42,10 @@ resource identity 'Microsoft.App/containerApps@2025-02-02-preview' = {
         {
           name: 'jwt--signingkey'
           value: jwt_signing_key_value
+        }
+        {
+          name: 'gateway--secret'
+          value: gateway_secret_value
         }
       ]
       activeRevisionsMode: 'Single'
@@ -117,6 +124,10 @@ resource identity 'Microsoft.App/containerApps@2025-02-02-preview' = {
             {
               name: 'Jwt__SigningKey'
               secretRef: 'jwt--signingkey'
+            }
+            {
+              name: 'Gateway__Secret'
+              secretRef: 'gateway--secret'
             }
             {
               name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'

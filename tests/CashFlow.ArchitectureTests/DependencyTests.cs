@@ -69,4 +69,75 @@ public class DependencyTests
 
         result.IsSuccessful.Should().BeTrue();
     }
+
+    [Fact]
+    public void TransactionsCreateFeature_ShouldNotDependOn_GetFeature()
+    {
+        var assembly = typeof(CashFlow.Transactions.API.Persistence.TransactionsDbContext).Assembly;
+
+        var result = Types.InAssembly(assembly)
+            .That()
+            .ResideInNamespace("CashFlow.Transactions.API.Features.CreateTransaction")
+            .ShouldNot()
+            .HaveDependencyOn("CashFlow.Transactions.API.Features.GetTransaction")
+            .GetResult();
+
+        result.IsSuccessful.Should().BeTrue();
+    }
+
+    [Fact]
+    public void ConsolidationConsumerFeature_ShouldNotDependOn_QueryFeature()
+    {
+        var assembly = typeof(CashFlow.Consolidation.API.Persistence.ConsolidationDbContext).Assembly;
+
+        var result = Types.InAssembly(assembly)
+            .That()
+            .ResideInNamespace("CashFlow.Consolidation.API.Features.TransactionCreated")
+            .ShouldNot()
+            .HaveDependencyOn("CashFlow.Consolidation.API.Features.GetDailyBalance")
+            .GetResult();
+
+        result.IsSuccessful.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Consumers_ShouldNotDependOn_Endpoints()
+    {
+        var consolidationAssembly = typeof(CashFlow.Consolidation.API.Persistence.ConsolidationDbContext).Assembly;
+
+        var result = Types.InAssembly(consolidationAssembly)
+            .That()
+            .ResideInNamespace("CashFlow.Consolidation.API.Features.TransactionCreated")
+            .ShouldNot()
+            .HaveDependencyOn("CashFlow.Consolidation.API.Features.GetDailyBalance")
+            .GetResult();
+
+        result.IsSuccessful.Should().BeTrue();
+
+        var transactionsAssembly = typeof(CashFlow.Transactions.API.Persistence.TransactionsDbContext).Assembly;
+
+        var result2 = Types.InAssembly(transactionsAssembly)
+            .That()
+            .ResideInNamespace("CashFlow.Transactions.API.Features.GetTransaction")
+            .ShouldNot()
+            .HaveDependencyOn("CashFlow.Transactions.API.Features.CreateTransaction")
+            .GetResult();
+
+        result2.IsSuccessful.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Handlers_ShouldNotDependOn_MassTransitConsumers()
+    {
+        var transactionsAssembly = typeof(CashFlow.Transactions.API.Persistence.TransactionsDbContext).Assembly;
+
+        var result = Types.InAssembly(transactionsAssembly)
+            .That()
+            .ResideInNamespace("CashFlow.Transactions.API.Features.CreateTransaction")
+            .ShouldNot()
+            .HaveDependencyOn("MassTransit")
+            .GetResult();
+
+        result.IsSuccessful.Should().BeTrue();
+    }
 }

@@ -46,6 +46,7 @@ var identity = builder.AddProject<Projects.CashFlow_Identity_API>("identity")
     .WithReference(identityDb)
     .WithEnvironment("Identity__Audience", "cashflow-api")
     .WithEnvironment("Jwt__SigningKey", jwtSigningKey)
+    .WithEnvironment("Gateway__Secret", gatewaySecret)
     .WithEnvironment("OTEL_SERVICE_VERSION", serviceVersion)
     .WaitFor(identityDb);
 

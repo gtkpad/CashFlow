@@ -55,6 +55,8 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.MapDefaultEndpoints();
+app.UseGlobalExceptionHandling();
+app.UseMiddleware<CashFlow.ServiceDefaults.GatewaySecretMiddleware>();
 
 app.MapGroup("/api/identity")
     .MapIdentityApi<IdentityUser>()

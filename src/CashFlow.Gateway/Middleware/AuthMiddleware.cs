@@ -11,6 +11,11 @@ public class AuthMiddleware(RequestDelegate next, IConfiguration configuration,
     {
         var path = context.Request.Path.Value ?? "";
 
+        // Inject gateway secret on all proxied requests for defense-in-depth
+        var gatewaySecret = configuration["Gateway:Secret"];
+        if (!string.IsNullOrEmpty(gatewaySecret))
+            context.Request.Headers["X-Gateway-Secret"] = gatewaySecret;
+
         if (_publicPaths.Any(p => path.StartsWith(p, StringComparison.OrdinalIgnoreCase)))
         {
             await next(context);
@@ -40,10 +45,6 @@ public class AuthMiddleware(RequestDelegate next, IConfiguration configuration,
 
         if (userId is not null)
             context.Request.Headers["X-User-Id"] = userId;
-
-        var gatewaySecret = configuration["Gateway:Secret"];
-        if (!string.IsNullOrEmpty(gatewaySecret))
-            context.Request.Headers["X-Gateway-Secret"] = gatewaySecret;
 
         await next(context);
     }
