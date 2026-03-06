@@ -63,35 +63,29 @@
 
 ## 3. Inventário de Componentes e Dependências
 
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│                    Azure Container Apps Environment                   │
-│                                                                       │
-│  ┌─────────┐    ┌──────────────┐    ┌────────────────┐               │
-│  │ Gateway  │───►│ Transactions │───►│  PostgreSQL     │               │
-│  │ (YARP)   │    │     API      │    │ (transactions)  │               │
-│  │          │    └──────┬───────┘    └────────────────┘               │
-│  │          │           │ outbox                                       │
-│  │          │           ▼                                              │
-│  │          │    ┌──────────────┐    ┌────────────────┐               │
-│  │          │    │  RabbitMQ    │───►│ Consolidation  │               │
-│  │          │    │  (messaging) │    │     API        │               │
-│  │          │    └──────────────┘    └───────┬────────┘               │
-│  │          │                                │                         │
-│  │          │───►┌──────────────┐    ┌───────▼────────┐               │
-│  │          │    │ Identity API │    │  PostgreSQL     │               │
-│  └─────────┘    └──────┬───────┘    │ (consolidation) │               │
-│                        │            └────────────────┘               │
-│                 ┌──────▼───────┐                                      │
-│                 │  PostgreSQL   │                                      │
-│                 │  (identity)   │                                      │
-│                 └──────────────┘                                      │
-└─────────────────────────────────────────────────────────────────────┘
-                         │
-              ┌──────────▼──────────┐
-              │   Azure Monitor      │
-              │ (App Insights + Logs)│
-              └─────────────────────┘
+```mermaid
+graph TD
+    subgraph ACA["Azure Container Apps Environment"]
+        GW["Gateway<br/>(YARP)"]
+        TX["Transactions API"]
+        CO["Consolidation API"]
+        ID["Identity API"]
+        RMQ["RabbitMQ<br/>(messaging)"]
+        PG_TX[("PostgreSQL<br/>(transactions)")]
+        PG_CO[("PostgreSQL<br/>(consolidation)")]
+        PG_ID[("PostgreSQL<br/>(identity)")]
+
+        GW -->|HTTP| TX
+        GW -->|HTTP| CO
+        GW -->|HTTP| ID
+        TX --> PG_TX
+        TX -->|outbox| RMQ
+        RMQ --> CO
+        CO --> PG_CO
+        ID --> PG_ID
+    end
+
+    ACA -.->|telemetry| MON["Azure Monitor<br/>(App Insights + Logs)"]
 ```
 
 ### Dependências Críticas por Serviço
@@ -112,8 +106,9 @@
 
 O consumer `TransactionCreatedConsumer` tem a pipeline de resiliência mais sofisticada do sistema. A ordem de execução (outermost first):
 
-```
-CircuitBreaker → DelayedRedelivery → MessageRetry → EntityFrameworkOutbox → Consumer
+```mermaid
+graph LR
+    CB["CircuitBreaker"] --> DR["DelayedRedelivery"] --> MR["MessageRetry"] --> EFO["EntityFrameworkOutbox"] --> C["Consumer"]
 ```
 
 | Camada | Configuração | Falha tratada |
