@@ -50,8 +50,6 @@ if (!skipDevResources)
 }
 
 // Services
-// Em E2E Testing, forçar HTTP-only para evitar problemas com certificado dev não confiável no CI.
-// O DCP do Aspire usa o endpoint HTTP para health checks quando ASPNETCORE_URLS está definido.
 var identity = builder.AddProject<Projects.CashFlow_Identity_API>("identity")
     .WithReference(identityDb)
     .WithEnvironment("Identity__Audience", "cashflow-api")
@@ -78,7 +76,8 @@ var consolidation = builder.AddProject<Projects.CashFlow_Consolidation_API>("con
     .WaitFor(consolidationDb)
     .WaitFor(rabbitmq);
 
-var gateway = builder.AddProject<Projects.CashFlow_Gateway>("gateway")
+// Gateway
+builder.AddProject<Projects.CashFlow_Gateway>("gateway")
     .WithReference(identity)
     .WithReference(transactions)
     .WithReference(consolidation)
@@ -91,16 +90,5 @@ var gateway = builder.AddProject<Projects.CashFlow_Gateway>("gateway")
     .WaitFor(transactions)
     .WaitFor(consolidation)
     .WithExternalHttpEndpoints();
-
-if (skipDevResources)
-{
-    // Forçar Kestrel a escutar somente HTTP em E2E/CI.
-    // Sem isso, o Kestrel liga HTTPS primeiro (certificado dev não confiável no CI)
-    // e o DCP pode falhar ao fazer health check, impedindo que os recursos atinjam "Healthy".
-    identity.WithEnvironment("ASPNETCORE_URLS", "http://+:0");
-    transactions.WithEnvironment("ASPNETCORE_URLS", "http://+:0");
-    consolidation.WithEnvironment("ASPNETCORE_URLS", "http://+:0");
-    gateway.WithEnvironment("ASPNETCORE_URLS", "http://+:0");
-}
 
 builder.Build().Run();
