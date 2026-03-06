@@ -424,3 +424,4 @@ O projeto possui pipelines automatizadas no GitHub Actions:
 | Documento | Descrição |
 |---|---|
 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | Documento de arquitetura completo (C4, ADRs, domínio, NFRs) |
+| [`docs/disaster-recovery.md`](docs/disaster-recovery.md) | Plano de Disaster Recovery (runbooks, escalation, RPO/RTO, teste de restore) |

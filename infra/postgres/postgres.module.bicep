@@ -1,6 +1,24 @@
 @description('The location for the resource(s) to be deployed.')
 param location string = resourceGroup().location
 
+@description('PostgreSQL SKU name. Use Standard_B1ms for dev, Standard_D2s_v3+ for production.')
+param skuName string = 'Standard_B1ms'
+
+@description('PostgreSQL SKU tier. Use Burstable for dev, GeneralPurpose for production.')
+param skuTier string = 'Burstable'
+
+@description('Backup retention in days. Minimum 7 (dev), recommended 35 (production).')
+param backupRetentionDays int = 35
+
+@description('Enable geo-redundant backup for cross-region disaster recovery.')
+param geoRedundantBackup string = 'Enabled'
+
+@description('High availability mode. Disabled for dev/Burstable, ZoneRedundant for production with GeneralPurpose/MemoryOptimized tier.')
+param highAvailabilityMode string = 'Disabled'
+
+@description('Storage size in GB. Minimum 32 for dev.')
+param storageSizeGB int = 32
+
 resource postgres 'Microsoft.DBforPostgreSQL/flexibleServers@2024-08-01' = {
   name: take('postgres-${uniqueString(resourceGroup().id)}', 63)
   location: location
@@ -11,20 +29,21 @@ resource postgres 'Microsoft.DBforPostgreSQL/flexibleServers@2024-08-01' = {
     }
     availabilityZone: '1'
     backup: {
-      backupRetentionDays: 7
-      geoRedundantBackup: 'Disabled'
+      backupRetentionDays: backupRetentionDays
+      geoRedundantBackup: geoRedundantBackup
     }
     highAvailability: {
-      mode: 'Disabled'
+      mode: highAvailabilityMode
     }
     storage: {
-      storageSizeGB: 32
+      storageSizeGB: storageSizeGB
+      autoGrow: 'Enabled'
     }
     version: '16'
   }
   sku: {
-    name: 'Standard_B1ms'
-    tier: 'Burstable'
+    name: skuName
+    tier: skuTier
   }
   tags: {
     'aspire-resource-name': 'postgres'

@@ -27,6 +27,7 @@
 7. [Boas Práticas e Padrões de Código](#7-boas-práticas-e-padrões-de-código)
 8. [Evolução](#8-evolução)
 - [Authorization Roadmap](#authorization-roadmap)
+- [Disaster Recovery](docs/disaster-recovery.md)
 - [Apêndice: API Endpoints](#apêndice-api-endpoints-visão-do-cliente-via-gateway)
 - [Apêndice: .NET Aspire AppHost](#apêndice-net-aspire-apphost)
 
@@ -1227,7 +1228,7 @@ Os testes de arquitetura (NetArchTest) impõem duas regras fundamentais: (1) **F
 | Testabilidade unitária | ✅ (Domain isolado) | ⚠️ (handler = tudo) | **✅** (Domain isolado + handlers leves) |
 | Complexidade acidental | Alta (abstrações desnecessárias) | Baixa (mas risco de duplicação) | **Mínima** (abstrações onde necessário) |
 
-### Estratégia de Backup e PITR (R4 — Sistema Financeiro)
+### Estratégia de Backup, PITR e Disaster Recovery (R4 — Sistema Financeiro)
 
 Para um sistema financeiro, a ausência de backup e Point-in-Time Recovery (PITR) é uma lacuna crítica de governança de dados. A LGPD (Lei 13.709/2020) e as normas do Banco Central do Brasil exigem rastreabilidade e recuperabilidade de dados financeiros.
 
@@ -1237,31 +1238,25 @@ Para um sistema financeiro, a ausência de backup e Point-in-Time Recovery (PITR
 |---|---|---|
 | **RPO** (Recovery Point Objective) | Perda máxima de dados aceita | < 5 minutos |
 | **RTO** (Recovery Time Objective) | Tempo máximo de recuperação | < 4 horas |
-| **Retenção** | Período mínimo de backup disponível | 90 dias (mínimo regulatório LGPD + BCB) |
+| **Retenção** | Período mínimo de backup disponível | 35 dias (PITR) + snapshots manuais para 90 dias (LGPD + BCB) |
 
 #### Estratégia de Produção — Azure PostgreSQL Flexible Server
 
-O sistema utiliza **Azure Database for PostgreSQL Flexible Server** (provisionado via Bicep em `infra/`) que oferece PITR nativo sem configuração manual:
+O sistema utiliza **Azure Database for PostgreSQL Flexible Server** (provisionado via Bicep em `infra/postgres/postgres.module.bicep`) com os seguintes defaults de produção:
 
-| Capacidade | Detalhe |
+| Capacidade | Configuração Bicep |
 |---|---|
-| **Backup automático** | Snapshot diário + WAL contínuo (gerenciado pela plataforma) |
+| **Backup automático** | `backupRetentionDays: 35` — snapshot diário + WAL contínuo |
 | **PITR nativo** | Recuperação para qualquer ponto nos últimos 35 dias com precisão de segundos |
-| **Geo-redundância** | Backup geo-redundante opcional para disaster recovery cross-region |
+| **Geo-redundância** | `geoRedundantBackup: 'Enabled'` — backup cross-region para DR |
+| **Alta Disponibilidade** | `highAvailabilityMode` parametrizável (`Disabled` em Burstable; `ZoneRedundant` ao migrar para GeneralPurpose) |
+| **Storage** | `autoGrow: 'Enabled'` — crescimento automático para evitar disk full |
 | **RPO efetivo** | < 5 minutos (WAL contínuo gerenciado) |
 | **RTO efetivo** | ~2-4 horas (depende do tamanho do banco e ponto de recuperação) |
 
 Para conformidade regulatória de 90 dias, complementar com snapshot manual mensal retido por 90 dias via Azure Backup ou script `azd` dedicado.
 
-#### Teste de Restore (Obrigatório — Mensal)
-
-Um backup não testado não é um backup. Procedimento de teste mensal:
-
-1. Provisionar instância PostgreSQL Flexible Server isolada via Azure CLI.
-2. Restaurar via PITR para um ponto no tempo do dia anterior.
-3. Executar queries de validação: contagem de transactions, verificação de balances de referência.
-4. Documentar o RTO real medido.
-5. Registrar resultado no log de auditoria de backup.
+> **Plano de Disaster Recovery completo:** Para runbooks operacionais, classificação de incidentes, escalation matrix e procedimentos detalhados por cenário de falha, consulte [`docs/disaster-recovery.md`](docs/disaster-recovery.md).
 
 ---
 
