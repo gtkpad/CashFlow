@@ -1,5 +1,6 @@
 using CashFlow.Transactions.API.Persistence;
 using MassTransit;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
@@ -49,23 +50,23 @@ public class TransactionsApiFactory : WebApplicationFactory<TransactionsDbContex
     {
         await Task.WhenAll(_postgres.StartAsync(), _rabbitmq.StartAsync());
 
+        // Program.cs only migrates in Development; run explicitly for the Testing environment
+        using (var scope = Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<TransactionsDbContext>();
+            await db.Database.MigrateAsync();
+        }
+
         // Clean state from previous runs when container is reused
-        try
+        await using var conn = new NpgsqlConnection(_postgres.GetConnectionString());
+        await conn.OpenAsync();
+        var respawner = await Respawner.CreateAsync(conn, new RespawnerOptions
         {
-            await using var conn = new NpgsqlConnection(_postgres.GetConnectionString());
-            await conn.OpenAsync();
-            var respawner = await Respawner.CreateAsync(conn, new RespawnerOptions
-            {
-                DbAdapter = DbAdapter.Postgres,
-                SchemasToInclude = ["public", "transactions"],
-                TablesToIgnore = [new Respawn.Graph.Table("__EFMigrationsHistory")]
-            });
-            await respawner.ResetAsync(conn);
-        }
-        catch (InvalidOperationException)
-        {
-            // First run — DB has no tables yet (migrations run at app startup)
-        }
+            DbAdapter = DbAdapter.Postgres,
+            SchemasToInclude = ["public", "transactions"],
+            TablesToIgnore = [new Respawn.Graph.Table("__EFMigrationsHistory")]
+        });
+        await respawner.ResetAsync(conn);
     }
 
     public new async Task DisposeAsync()
