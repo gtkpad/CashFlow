@@ -6,11 +6,9 @@ var jwtSigningKey = builder.AddParameter("jwt-signing-key", secret: true);
 var serviceVersion = builder.Configuration["OTEL_SERVICE_VERSION"] ?? "1.0.0-dev";
 var skipDevResources = Environment.GetEnvironmentVariable("CASHFLOW_E2E_TESTING") == "true";
 
-// Application Insights: pular apenas em E2E testing (onde não há recurso AI).
-// Em produção/dev, o Aspire gera o parâmetro Bicep — a connection string é injetada no deploy.
-var appInsights = !skipDevResources
-    ? builder.AddConnectionString("appinsights", "APPLICATIONINSIGHTS_CONNECTION_STRING")
-    : null;
+// Application Insights: a connection string é injetada via Bicep customizado (infra/*-containerapp.module.bicep).
+// Não usar AddConnectionString aqui — gera parâmetro Bicep que conflita com o existente.
+// Em E2E/CI a variável não existe, os serviços tratam ausência graciosamente.
 
 // Infrastructure
 if (!skipDevResources)
@@ -72,13 +70,6 @@ if (!skipDevResources)
     consolidation.WithHttpHealthCheck("/health");
 }
 
-if (appInsights is not null)
-{
-    identity.WithReference(appInsights);
-    transactions.WithReference(appInsights);
-    consolidation.WithReference(appInsights);
-}
-
 // Gateway
 var gateway = builder.AddProject<Projects.CashFlow_Gateway>("gateway")
     .WithReference(identity)
@@ -89,11 +80,6 @@ var gateway = builder.AddProject<Projects.CashFlow_Gateway>("gateway")
     .WithEnvironment("Gateway__Secret", gatewaySecret)
     .WithEnvironment("OTEL_SERVICE_VERSION", serviceVersion)
     .WithExternalHttpEndpoints();
-
-if (appInsights is not null)
-{
-    gateway.WithReference(appInsights);
-}
 
 if (skipDevResources)
 {
