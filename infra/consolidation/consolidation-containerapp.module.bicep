@@ -23,6 +23,8 @@ param gateway_secret_value string
 
 param consolidation_identity_outputs_clientid string
 
+param consolidation_identity_outputs_principalname string
+
 param env_outputs_azure_container_registry_endpoint string
 
 param env_outputs_azure_container_registry_managed_identity_id string
@@ -101,7 +103,7 @@ resource consolidation 'Microsoft.App/containerApps@2025-02-02-preview' = {
             }
             {
               name: 'ConnectionStrings__consolidation-db'
-              value: '${postgres_outputs_connectionstring};Database=consolidation-db'
+              value: '${postgres_outputs_connectionstring};Database=consolidation-db;Username=${consolidation_identity_outputs_principalname}'
             }
             {
               name: 'CONSOLIDATION_DB_HOST'

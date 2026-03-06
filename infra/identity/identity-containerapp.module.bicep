@@ -20,6 +20,8 @@ param jwt_signing_key_value string
 
 param identity_identity_outputs_clientid string
 
+param identity_identity_outputs_principalname string
+
 param env_outputs_azure_container_registry_endpoint string
 
 param env_outputs_azure_container_registry_managed_identity_id string
@@ -86,7 +88,7 @@ resource identity 'Microsoft.App/containerApps@2025-02-02-preview' = {
             }
             {
               name: 'ConnectionStrings__identity-db'
-              value: '${postgres_outputs_connectionstring};Database=identity-db'
+              value: '${postgres_outputs_connectionstring};Database=identity-db;Username=${identity_identity_outputs_principalname}'
             }
             {
               name: 'IDENTITY_DB_HOST'

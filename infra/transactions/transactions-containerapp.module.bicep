@@ -23,6 +23,8 @@ param gateway_secret_value string
 
 param transactions_identity_outputs_clientid string
 
+param transactions_identity_outputs_principalname string
+
 param env_outputs_azure_container_registry_endpoint string
 
 param env_outputs_azure_container_registry_managed_identity_id string
@@ -101,7 +103,7 @@ resource transactions 'Microsoft.App/containerApps@2025-02-02-preview' = {
             }
             {
               name: 'ConnectionStrings__transactions-db'
-              value: '${postgres_outputs_connectionstring};Database=transactions-db'
+              value: '${postgres_outputs_connectionstring};Database=transactions-db;Username=${transactions_identity_outputs_principalname}'
             }
             {
               name: 'TRANSACTIONS_DB_HOST'

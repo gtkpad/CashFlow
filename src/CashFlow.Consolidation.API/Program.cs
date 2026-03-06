@@ -10,7 +10,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
 
-builder.AddNpgsqlDbContext<ConsolidationDbContext>("consolidation-db");
+builder.AddAzureNpgsqlDbContext<ConsolidationDbContext>("consolidation-db");
 
 builder.Services.AddHealthChecks()
     .AddDbContextCheck<ConsolidationDbContext>("consolidation-db", tags: ["ready"]);

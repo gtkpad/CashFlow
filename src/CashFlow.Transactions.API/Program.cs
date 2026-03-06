@@ -17,7 +17,7 @@ builder.Services.AddDbContext<TransactionsDbContext>((sp, options) =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("transactions-db"));
     options.AddInterceptors(sp.GetRequiredService<DomainEventInterceptor>());
 });
-builder.EnrichNpgsqlDbContext<TransactionsDbContext>();
+builder.EnrichAzureNpgsqlDbContext<TransactionsDbContext>();
 
 builder.Services.AddHealthChecks()
     .AddDbContextCheck<TransactionsDbContext>("transactions-db", tags: ["ready"]);

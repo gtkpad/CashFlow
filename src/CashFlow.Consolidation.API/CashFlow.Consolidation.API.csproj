@@ -10,7 +10,7 @@
     <PackageReference Include="MassTransit.RabbitMQ" />
     <PackageReference Include="Carter" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
-    <PackageReference Include="Aspire.Npgsql.EntityFrameworkCore.PostgreSQL" />
+    <PackageReference Include="Aspire.Azure.Npgsql.EntityFrameworkCore.PostgreSQL" />
     <PackageReference Include="Aspire.RabbitMQ.Client" />
   </ItemGroup>
 

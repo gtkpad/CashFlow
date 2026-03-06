@@ -9,7 +9,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
 
-builder.AddNpgsqlDbContext<IdentityDbContext>("identity-db");
+builder.AddAzureNpgsqlDbContext<IdentityDbContext>("identity-db");
 
 builder.Services.AddHealthChecks()
     .AddDbContextCheck<IdentityDbContext>("identity-db", tags: ["ready"]);

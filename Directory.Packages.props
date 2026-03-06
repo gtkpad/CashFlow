@@ -34,6 +34,7 @@
         <PackageVersion Include="Aspire.Hosting.PostgreSQL" Version="13.1.2" />
         <PackageVersion Include="Aspire.Hosting.RabbitMQ" Version="13.1.2" />
         <PackageVersion Include="Aspire.Npgsql.EntityFrameworkCore.PostgreSQL" Version="13.1.2" />
+        <PackageVersion Include="Aspire.Azure.Npgsql.EntityFrameworkCore.PostgreSQL" Version="13.1.2" />
         <PackageVersion Include="Aspire.RabbitMQ.Client" Version="13.1.2" />
         <PackageVersion Include="Aspire.Hosting.Testing" Version="13.1.2" />
 
