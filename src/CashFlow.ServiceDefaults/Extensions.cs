@@ -2,6 +2,7 @@ using Azure.Monitor.OpenTelemetry.AspNetCore;
 using CashFlow.ServiceDefaults;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging;
@@ -97,10 +98,15 @@ public static class Extensions
             builder.Services.AddOpenTelemetry().UseOtlpExporter();
         }
 
-        if (!string.IsNullOrEmpty(builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"]))
+        // Aspire WithReference injeta como ConnectionStrings__appinsights;
+        // deploy direto (ou legacy) pode usar APPLICATIONINSIGHTS_CONNECTION_STRING.
+        var appInsightsConnectionString = builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"]
+            ?? builder.Configuration.GetConnectionString("appinsights");
+
+        if (!string.IsNullOrEmpty(appInsightsConnectionString))
         {
             builder.Services.AddOpenTelemetry()
-               .UseAzureMonitor();
+               .UseAzureMonitor(o => o.ConnectionString = appInsightsConnectionString);
         }
 
         return builder;

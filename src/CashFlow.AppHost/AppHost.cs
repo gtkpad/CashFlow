@@ -5,8 +5,12 @@ var builder = DistributedApplication.CreateBuilder(args);
 var gatewaySecret = builder.AddParameter("gateway-secret", secret: true);
 var jwtSigningKey = builder.AddParameter("jwt-signing-key", secret: true);
 
-// Application Insights (producao): APPLICATIONINSIGHTS_CONNECTION_STRING
-// configurada via azd env set ou Azure Portal. Em dev local, Aspire Dashboard recebe telemetria via OTLP.
+// Application Insights: em produção, connection string vem do Bicep output (azd env).
+// Em dev local, Aspire Dashboard recebe telemetria via OTLP (nenhuma config adicional necessária).
+var appInsights = builder.AddConnectionString(
+    "appinsights",
+    "APPLICATIONINSIGHTS_CONNECTION_STRING");
+
 var serviceVersion = builder.Configuration["OTEL_SERVICE_VERSION"] ?? "1.0.0-dev";
 
 // Skip dev-only resources in E2E tests (set by CashFlowAppFixture before CreateAsync).
@@ -52,6 +56,7 @@ if (!skipDevResources)
 // Services
 var identity = builder.AddProject<Projects.CashFlow_Identity_API>("identity")
     .WithReference(identityDb)
+    .WithReference(appInsights)
     .WithEnvironment("Identity__Audience", "cashflow-api")
     .WithEnvironment("Jwt__SigningKey", jwtSigningKey)
     .WithEnvironment("OTEL_SERVICE_VERSION", serviceVersion)
@@ -60,6 +65,7 @@ var identity = builder.AddProject<Projects.CashFlow_Identity_API>("identity")
 var transactions = builder.AddProject<Projects.CashFlow_Transactions_API>("transactions")
     .WithReference(transactionsDb)
     .WithReference(rabbitmq)
+    .WithReference(appInsights)
     .WithEnvironment("Gateway__Secret", gatewaySecret)
     .WithEnvironment("OTEL_SERVICE_VERSION", serviceVersion)
     .WaitFor(transactionsDb)
@@ -68,6 +74,7 @@ var transactions = builder.AddProject<Projects.CashFlow_Transactions_API>("trans
 var consolidation = builder.AddProject<Projects.CashFlow_Consolidation_API>("consolidation")
     .WithReference(consolidationDb)
     .WithReference(rabbitmq)
+    .WithReference(appInsights)
     .WithEnvironment("Gateway__Secret", gatewaySecret)
     .WithEnvironment("OTEL_SERVICE_VERSION", serviceVersion)
     .WaitFor(consolidationDb)
@@ -89,6 +96,7 @@ var gateway = builder.AddProject<Projects.CashFlow_Gateway>("gateway")
     .WithReference(identity)
     .WithReference(transactions)
     .WithReference(consolidation)
+    .WithReference(appInsights)
     .WithEnvironment("Identity__ValidAudiences__0", "cashflow-api")
     .WithEnvironment("Jwt__SigningKey", jwtSigningKey)
     .WithEnvironment("Gateway__Secret", gatewaySecret)
