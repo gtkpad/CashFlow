@@ -74,7 +74,7 @@ resource consolidation_db 'Microsoft.DBforPostgreSQL/flexibleServers/databases@2
   parent: postgres
 }
 
-output connectionString string = 'Host=${postgres.properties.fullyQualifiedDomainName}'
+output connectionString string = 'Host=${postgres.properties.fullyQualifiedDomainName};Ssl Mode=Require'
 
 output name string = postgres.name
 
