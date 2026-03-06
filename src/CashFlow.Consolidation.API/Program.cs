@@ -48,9 +48,8 @@ var app = builder.Build();
 
 app.UseProductionHttpsSecurity();
 
-if (app.Environment.IsDevelopment())
+using (var scope = app.Services.CreateScope())
 {
-    using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<ConsolidationDbContext>();
     await db.Database.MigrateAsync();
 }

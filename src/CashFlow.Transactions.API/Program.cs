@@ -55,9 +55,10 @@ var app = builder.Build();
 
 app.UseProductionHttpsSecurity();
 
-if (app.Environment.IsDevelopment())
+// EF Core MigrateAsync is idempotent and uses pg_advisory_lock to serialize
+// concurrent migrations across replicas — safe for production startup.
+using (var scope = app.Services.CreateScope())
 {
-    using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<TransactionsDbContext>();
     await db.Database.MigrateAsync();
 }
