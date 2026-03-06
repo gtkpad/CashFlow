@@ -50,13 +50,13 @@ public class CashFlowAppFixture : IAsyncLifetime
         await _app.StartAsync(ct)
             .WaitAsync(StartupTimeout, ct);
 
-        // Wait for all services to be healthy in parallel before running tests
-        await Task.WhenAll(
-            _app.ResourceNotifications.WaitForResourceHealthyAsync("identity", ct).WaitAsync(StartupTimeout, ct),
-            _app.ResourceNotifications.WaitForResourceHealthyAsync("transactions", ct).WaitAsync(StartupTimeout, ct),
-            _app.ResourceNotifications.WaitForResourceHealthyAsync("consolidation", ct).WaitAsync(StartupTimeout, ct),
-            _app.ResourceNotifications.WaitForResourceHealthyAsync("gateway", ct).WaitAsync(StartupTimeout, ct)
-        );
+        // StartAsync returns when all resources reach their target state:
+        // - Containers (postgres, rabbitmq): Running
+        // - Services without WithHttpHealthCheck (E2E mode): Running
+        // - Services with WithHttpHealthCheck (dev mode): Healthy
+        // In E2E mode, WithHttpHealthCheck is omitted and gateway uses WaitForStart,
+        // so StartAsync returns as soon as all services are Running.
+        // Functional readiness is verified by the E2E test assertions themselves.
     }
 
     public async Task DisposeAsync()
