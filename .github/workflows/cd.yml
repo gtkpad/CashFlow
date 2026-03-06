@@ -48,7 +48,7 @@ jobs:
           AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
           AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
 
-      - name: Inject secrets into azd environment
+      - name: Configure azd environment
         env:
           AZURE_GATEWAY_SECRET: ${{ secrets.AZURE_GATEWAY_SECRET }}
           AZURE_JWT_SIGNING_KEY: ${{ secrets.AZURE_JWT_SIGNING_KEY }}
@@ -57,15 +57,12 @@ jobs:
           ALERT_EMAIL_ADDRESS: ${{ vars.ALERT_EMAIL_ADDRESS }}
         run: |
           azd env new "$AZURE_ENV_NAME" --no-prompt || true
-          # Bicep parameters (used by azd provision via main.parameters.json)
+          azd env select "$AZURE_ENV_NAME"
+          # Bicep parameters (resolved via main.parameters.json ${VAR} interpolation)
           azd env set AZURE_GATEWAY_SECRET "$AZURE_GATEWAY_SECRET"
           azd env set AZURE_JWT_SIGNING_KEY "$AZURE_JWT_SIGNING_KEY"
           azd env set AZURE_MESSAGING_PASSWORD "$AZURE_MESSAGING_PASSWORD"
           azd env set APPLICATIONINSIGHTS_CONNECTION_STRING "$APPLICATIONINSIGHTS_CONNECTION_STRING"
-          # Aspire securedParameter keys (used by azd deploy for container app templates)
-          azd env set gateway_secret "$AZURE_GATEWAY_SECRET"
-          azd env set jwt_signing_key "$AZURE_JWT_SIGNING_KEY"
-          azd env set messaging_password "$AZURE_MESSAGING_PASSWORD"
           VERSION=${GITHUB_SHA::8}
           azd env set OTEL_SERVICE_VERSION "$VERSION"
           azd env set ALERT_EMAIL_ADDRESS "$ALERT_EMAIL_ADDRESS"
@@ -74,4 +71,17 @@ jobs:
         run: azd provision --no-prompt
 
       - name: Deploy Application
-        run: azd deploy --no-prompt
+        env:
+          # AZD_INITIAL_ENVIRONMENT_CONFIG provides Aspire securedParameter values
+          # for azd deploy. Parameter names must match AddParameter() in AppHost.cs.
+          # See: https://github.com/dotnet/aspire/discussions/4083
+          AZURE_GATEWAY_SECRET: ${{ secrets.AZURE_GATEWAY_SECRET }}
+          AZURE_JWT_SIGNING_KEY: ${{ secrets.AZURE_JWT_SIGNING_KEY }}
+          AZURE_MESSAGING_PASSWORD: ${{ secrets.AZURE_MESSAGING_PASSWORD }}
+        run: |
+          export AZD_INITIAL_ENVIRONMENT_CONFIG=$(jq -n \
+            --arg gs "$AZURE_GATEWAY_SECRET" \
+            --arg jk "$AZURE_JWT_SIGNING_KEY" \
+            --arg mp "$AZURE_MESSAGING_PASSWORD" \
+            '{"infra":{"parameters":{"gateway-secret":$gs,"jwt-signing-key":$jk,"messaging-password":$mp}}}')
+          azd deploy --no-prompt
