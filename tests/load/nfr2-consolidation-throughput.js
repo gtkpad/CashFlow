@@ -53,7 +53,7 @@ export function setup() {
 export default function (data) {
   const today = new Date().toISOString().split('T')[0];
 
-  const res = http.get(`${BASE_URL}/api/consolidation/${today}`, {
+  const res = http.get(`${BASE_URL}/api/v1/consolidation/${today}`, {
     headers: {
       Authorization: `Bearer ${data.token}`,
     },

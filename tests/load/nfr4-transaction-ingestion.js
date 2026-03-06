@@ -63,7 +63,7 @@ export default function (data) {
     description: `k6 load test transaction ${counter}`,
   });
 
-  const res = http.post(`${BASE_URL}/api/transactions`, payload, {
+  const res = http.post(`${BASE_URL}/api/v1/transactions`, payload, {
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${data.token}`,
