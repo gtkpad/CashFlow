@@ -217,8 +217,9 @@ jobs:
 
       - name: Pre-pull Docker images (Aspire)
         run: |
-          docker pull postgres:16-alpine
-          docker pull rabbitmq:3.13-management-alpine
+          docker pull postgres:17.6
+          docker pull rabbitmq:4.2-management
+          docker pull dpage/pgadmin4:9.9.0
 
       - name: Restore
         run: dotnet restore
@@ -234,7 +235,7 @@ jobs:
         env:
           DOCKER_HOST: unix:///var/run/docker.sock
           ASPIRE_ALLOW_UNSECURED_TRANSPORT: "true"
-        timeout-minutes: 15
+        timeout-minutes: 20
 
       - name: Upload test results
         uses: actions/upload-artifact@v4

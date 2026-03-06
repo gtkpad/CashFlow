@@ -14,7 +14,7 @@ public class CashFlowAppFixture : IAsyncLifetime
     /// <summary>
     /// Maximum time to wait for the AppHost and all resources to start.
     /// </summary>
-    public static readonly TimeSpan StartupTimeout = TimeSpan.FromMinutes(5);
+    public static readonly TimeSpan StartupTimeout = TimeSpan.FromMinutes(10);
 
     public async Task InitializeAsync()
     {
