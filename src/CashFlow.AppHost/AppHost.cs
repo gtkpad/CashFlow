@@ -14,16 +14,32 @@ var serviceVersion = builder.Configuration["OTEL_SERVICE_VERSION"] ?? "1.0.0-dev
 // Infrastructure
 // Em produção: Azure Database for PostgreSQL Flexible Server
 // Em dev local: container PostgreSQL (RunAsContainer)
+var skipDevResources = builder.Configuration["AppHost:SkipDevResources"] == "true";
+
 var postgres = builder.AddAzurePostgresFlexibleServer("postgres")
-    .RunAsContainer(c => c.WithDataVolume().WithPgAdmin());
+    .RunAsContainer(c =>
+    {
+        // Volumes persistem a senha do PostgreSQL entre runs — incompatível com o Aspire Testing,
+        // que gera senhas aleatórias. Omitir em Testing/CI para evitar "password authentication failed".
+        if (!skipDevResources)
+        {
+            c.WithDataVolume();
+            c.WithPgAdmin();
+        }
+    });
 
 var identityDb = postgres.AddDatabase("identity-db");
 var transactionsDb = postgres.AddDatabase("transactions-db");
 var consolidationDb = postgres.AddDatabase("consolidation-db");
 
-var rabbitmq = builder.AddRabbitMQ("messaging")
-    .WithDataVolume()
-    .WithManagementPlugin();
+var rabbitmq = builder.AddRabbitMQ("messaging");
+
+// Volumes e management UI são recursos de desenvolvimento — omitidos em Testing/CI
+if (!skipDevResources)
+{
+    rabbitmq.WithDataVolume();
+    rabbitmq.WithManagementPlugin();
+}
 
 // Services
 var identity = builder.AddProject<Projects.CashFlow_Identity_API>("identity")

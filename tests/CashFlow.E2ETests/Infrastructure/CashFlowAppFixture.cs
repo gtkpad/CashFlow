@@ -23,10 +23,13 @@ public class CashFlowAppFixture : IAsyncLifetime
         using var cts = new CancellationTokenSource(StartupTimeout);
         var ct = cts.Token;
 
+        // Pass SkipDevResources via args: AppHost.cs runs during CreateAsync, so this config
+        // must be available before the call (args are injected into builder.Configuration immediately).
         var appHost = await DistributedApplicationTestingBuilder
-            .CreateAsync<Projects.CashFlow_AppHost>(ct);
+            .CreateAsync<Projects.CashFlow_AppHost>(["--AppHost:SkipDevResources=true"], ct);
 
-        // Provide values for secret parameters not available in CI environment
+        // Provide values for secret parameters not available in CI environment.
+        // Parameters are resolved lazily (during StartAsync), so post-CreateAsync injection works.
         appHost.Configuration["Parameters:jwt-signing-key"] = "E2eTests_JwtSigningKey_AtLeast32Chars!!";
         appHost.Configuration["Parameters:gateway-secret"] = "E2eTests_GatewaySecret";
 
