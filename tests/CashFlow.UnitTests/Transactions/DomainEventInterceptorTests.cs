@@ -57,7 +57,7 @@ public class DomainEventInterceptorTests
 
         // Assert
         await _publishEndpoint.Received(1).Publish(
-            Arg.Any<object>(), typeof(ITransactionCreated), Arg.Any<CancellationToken>());
+            Arg.Any<ITransactionCreated>(), Arg.Any<CancellationToken>());
 
         transaction.DomainEvents.Should().BeEmpty("interceptor should clear domain events");
     }
@@ -72,8 +72,8 @@ public class DomainEventInterceptorTests
         await context.SaveChangesAsync();
 
         // Assert
-        await _publishEndpoint.DidNotReceive().Publish(
-            Arg.Any<object>(), Arg.Any<Type>(), Arg.Any<CancellationToken>());
+        await _publishEndpoint.DidNotReceiveWithAnyArgs().Publish<ITransactionCreated>(
+            default!, Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -82,7 +82,7 @@ public class DomainEventInterceptorTests
         // Arrange
         await using var context = CreateContext();
         _publishEndpoint
-            .Publish(Arg.Any<object>(), Arg.Any<Type>(), Arg.Any<CancellationToken>())
+            .Publish(Arg.Any<ITransactionCreated>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromException(new InvalidOperationException("broker down")));
 
         var result = Transaction.Create(
@@ -130,8 +130,8 @@ public class DomainEventInterceptorTests
         await context.SaveChangesAsync();
 
         // Assert — unmapped event returns null from DomainEventMapper, so no publish
-        await _publishEndpoint.DidNotReceive().Publish(
-            Arg.Any<object>(), Arg.Any<Type>(), Arg.Any<CancellationToken>());
+        await _publishEndpoint.DidNotReceiveWithAnyArgs().Publish<ITransactionCreated>(
+            default!, Arg.Any<CancellationToken>());
 
         transaction.DomainEvents.Should().BeEmpty("interceptor should still clear events");
     }

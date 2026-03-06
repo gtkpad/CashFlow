@@ -1,16 +1,25 @@
 using CashFlow.Domain.IntegrationEvents;
 using CashFlow.Domain.SharedKernel;
 using CashFlow.Domain.Transactions;
+using MassTransit;
 
 namespace CashFlow.Transactions.API.Persistence;
 
 public static class DomainEventMapper
 {
-    public static object? Map(IDomainEvent domainEvent) => domainEvent switch
+    public static async Task PublishIntegrationEvent(
+        IDomainEvent domainEvent,
+        IPublishEndpoint publishEndpoint,
+        CancellationToken cancellationToken)
     {
-        TransactionCreated e => MapTransactionCreated(e),
-        _ => null
-    };
+        switch (domainEvent)
+        {
+            case TransactionCreated e:
+                await publishEndpoint.Publish<ITransactionCreated>(
+                    MapTransactionCreated(e), cancellationToken);
+                break;
+        }
+    }
 
     private record TransactionCreatedEvent(
         Guid TransactionId, Guid MerchantId, DateOnly ReferenceDate,
@@ -20,10 +29,4 @@ public static class DomainEventMapper
         new TransactionCreatedEvent(
             e.TransactionId.Value, e.MerchantId.Value, e.ReferenceDate,
             e.Type.ToString(), e.Value.Amount, e.Value.Currency);
-
-    internal static Type? GetIntegrationEventType(IDomainEvent domainEvent) => domainEvent switch
-    {
-        TransactionCreated => typeof(ITransactionCreated),
-        _ => null
-    };
 }

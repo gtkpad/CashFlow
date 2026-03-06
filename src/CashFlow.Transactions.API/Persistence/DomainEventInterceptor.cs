@@ -30,11 +30,8 @@ public sealed class DomainEventInterceptor(IServiceProvider serviceProvider) : S
 
         foreach (var domainEvent in domainEvents)
         {
-            var integrationEvent = DomainEventMapper.Map(domainEvent);
-            var eventType = DomainEventMapper.GetIntegrationEventType(domainEvent);
-
-            if (integrationEvent is not null && eventType is not null)
-                await publishEndpoint.Publish(integrationEvent, eventType, cancellationToken);
+            await DomainEventMapper.PublishIntegrationEvent(
+                domainEvent, publishEndpoint, cancellationToken);
         }
 
         foreach (var entity in entities)
