@@ -49,6 +49,12 @@ if (!skipDevResources)
     rabbitmq.WithManagementPlugin();
 }
 
+// Em E2E/CI, usar /alive para health probing do Aspire nos serviços com MassTransit.
+// O /health inclui checks do bus MassTransit que podem demorar indefinidamente para
+// reportar Healthy, causando timeout do StartAsync. O /alive usa apenas o check "self"
+// (tagged "live") que retorna Healthy imediatamente após o app iniciar.
+var massTransitHealthPath = skipDevResources ? "/alive" : "/health";
+
 // Services
 var identity = builder.AddProject<Projects.CashFlow_Identity_API>("identity")
     .WithReference(identityDb)
@@ -63,7 +69,7 @@ var transactions = builder.AddProject<Projects.CashFlow_Transactions_API>("trans
     .WithReference(rabbitmq)
     .WithEnvironment("Gateway__Secret", gatewaySecret)
     .WithEnvironment("OTEL_SERVICE_VERSION", serviceVersion)
-    .WithHttpHealthCheck("/health")
+    .WithHttpHealthCheck(massTransitHealthPath)
     .WaitFor(transactionsDb)
     .WaitFor(rabbitmq);
 
@@ -72,7 +78,7 @@ var consolidation = builder.AddProject<Projects.CashFlow_Consolidation_API>("con
     .WithReference(rabbitmq)
     .WithEnvironment("Gateway__Secret", gatewaySecret)
     .WithEnvironment("OTEL_SERVICE_VERSION", serviceVersion)
-    .WithHttpHealthCheck("/health")
+    .WithHttpHealthCheck(massTransitHealthPath)
     .WaitFor(consolidationDb)
     .WaitFor(rabbitmq);
 
