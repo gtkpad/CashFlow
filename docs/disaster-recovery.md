@@ -1,7 +1,7 @@
 # Plano de Disaster Recovery — CashFlow
 
 > **Última revisão:** 2026-03-06
-> **Responsável:** Equipe de Engenharia
+> **Responsável:** Gabriel Padilha
 > **Status:** Ativo
 
 ## Índice
