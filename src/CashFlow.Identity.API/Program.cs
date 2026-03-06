@@ -57,7 +57,8 @@ using (var scope = app.Services.CreateScope())
 app.MapDefaultEndpoints();
 
 app.MapGroup("/api/identity")
-    .MapIdentityApi<IdentityUser>();
+    .MapIdentityApi<IdentityUser>()
+    .DisableAntiforgery();
 
 app.Run();
 

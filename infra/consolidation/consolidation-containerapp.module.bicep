@@ -170,6 +170,43 @@ resource consolidation 'Microsoft.App/containerApps@2025-02-02-preview' = {
               value: 'ManagedIdentityCredential'
             }
           ]
+          probes: [
+            {
+              type: 'liveness'
+              httpGet: {
+                path: '/alive'
+                port: int(consolidation_containerport)
+              }
+              initialDelaySeconds: 5
+              periodSeconds: 10
+              failureThreshold: 3
+              successThreshold: 1
+              timeoutSeconds: 5
+            }
+            {
+              type: 'readiness'
+              httpGet: {
+                path: '/health'
+                port: int(consolidation_containerport)
+              }
+              initialDelaySeconds: 10
+              periodSeconds: 15
+              failureThreshold: 3
+              successThreshold: 1
+              timeoutSeconds: 5
+            }
+            {
+              type: 'startup'
+              httpGet: {
+                path: '/alive'
+                port: int(consolidation_containerport)
+              }
+              initialDelaySeconds: 3
+              periodSeconds: 5
+              failureThreshold: 12
+              timeoutSeconds: 5
+            }
+          ]
         }
       ]
       scale: {
