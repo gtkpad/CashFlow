@@ -57,13 +57,19 @@ jobs:
         run: |
           azd env new "$AZURE_ENV_NAME" --no-prompt || true
           azd env select "$AZURE_ENV_NAME"
-          # Bicep parameters (resolved via main.parameters.json ${VAR} interpolation)
+          # Bicep parameters for azd provision (main.parameters.json ${VAR} interpolation)
           azd env set AZURE_GATEWAY_SECRET "$AZURE_GATEWAY_SECRET"
           azd env set AZURE_JWT_SIGNING_KEY "$AZURE_JWT_SIGNING_KEY"
           azd env set AZURE_MESSAGING_PASSWORD "$AZURE_MESSAGING_PASSWORD"
           VERSION=${GITHUB_SHA::8}
           azd env set OTEL_SERVICE_VERSION "$VERSION"
           azd env set ALERT_EMAIL_ADDRESS "$ALERT_EMAIL_ADDRESS"
+          # Aspire secured parameters for azd deploy (maps to per-service Bicep params).
+          # AddParameter("gateway-secret") → Bicep param `gateway_secret_value`, etc.
+          # These are NOT captured from provision outputs (secrets aren't output).
+          azd env set GATEWAY_SECRET_VALUE "$AZURE_GATEWAY_SECRET"
+          azd env set JWT_SIGNING_KEY_VALUE "$AZURE_JWT_SIGNING_KEY"
+          azd env set MESSAGING_PASSWORD_VALUE "$AZURE_MESSAGING_PASSWORD"
 
       - name: Provision Infrastructure
         run: azd provision --no-prompt
