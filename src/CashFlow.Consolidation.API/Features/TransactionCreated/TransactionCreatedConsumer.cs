@@ -10,7 +10,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CashFlow.Consolidation.API.Features.TransactionCreated;
 
-public class TransactionCreatedConsumer(
+public sealed class TransactionCreatedConsumer(
     IDailySummaryRepository repo,
     ConsolidationDbContext db,
     IOutputCacheStore cacheStore,
@@ -35,9 +35,8 @@ public class TransactionCreatedConsumer(
 
         if (summary.TransactionCount == 1)
             await repo.AddAsync(summary);
-        else
-            await repo.Save(summary);
 
+        // EF Core change tracker persists modified entities on SaveChangesAsync
         await db.SaveChangesAsync();
 
         var tag = $"balance-{evt.MerchantId}-{evt.ReferenceDate:yyyy-MM-dd}";
@@ -59,7 +58,7 @@ public class TransactionCreatedConsumer(
     }
 }
 
-public class TransactionCreatedConsumerDefinition
+public sealed class TransactionCreatedConsumerDefinition
     : ConsumerDefinition<TransactionCreatedConsumer>
 {
     public TransactionCreatedConsumerDefinition()

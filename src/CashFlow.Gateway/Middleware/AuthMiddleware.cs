@@ -2,7 +2,7 @@ using CashFlow.ServiceDefaults;
 
 namespace CashFlow.Gateway.Middleware;
 
-public class AuthMiddleware(RequestDelegate next, IConfiguration configuration,
+public sealed class AuthMiddleware(RequestDelegate next, IConfiguration configuration,
     ILogger<AuthMiddleware> logger, CashFlowMetrics metrics)
 {
     private static readonly string[] _publicPaths = ["/api/identity/"];
@@ -43,8 +43,15 @@ public class AuthMiddleware(RequestDelegate next, IConfiguration configuration,
         var userId = context.User.FindFirst("sub")?.Value
                   ?? context.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
 
-        if (userId is not null)
-            context.Request.Headers["X-User-Id"] = userId;
+        if (userId is null)
+        {
+            logger.LogWarning("Authenticated user has no 'sub' claim on {Path}", path);
+            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            metrics.RecordAuthFailure("missing_sub_claim");
+            return;
+        }
+
+        context.Request.Headers["X-User-Id"] = userId;
 
         await next(context);
     }

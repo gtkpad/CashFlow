@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CashFlow.Transactions.API.Persistence;
 
-public class TransactionsDbContext(DbContextOptions<TransactionsDbContext> options)
+public sealed class TransactionsDbContext(DbContextOptions<TransactionsDbContext> options)
     : DbContext(options)
 {
     public DbSet<Transaction> Transactions => Set<Transaction>();

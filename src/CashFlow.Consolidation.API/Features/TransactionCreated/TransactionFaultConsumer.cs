@@ -4,7 +4,7 @@ using MassTransit;
 
 namespace CashFlow.Consolidation.API.Features.TransactionCreated;
 
-public class TransactionFaultConsumer(
+public sealed class TransactionFaultConsumer(
     CashFlowMetrics metrics,
     ILogger<TransactionFaultConsumer> logger) : IConsumer<Fault<ITransactionCreated>>
 {

@@ -10,7 +10,11 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
 
-builder.AddAzureNpgsqlDbContext<ConsolidationDbContext>("consolidation-db");
+builder.AddAzureNpgsqlDbContext<ConsolidationDbContext>("consolidation-db",
+    configureDbContextOptions: options =>
+    {
+        options.UseNpgsql(npgsqlOptions => npgsqlOptions.EnableRetryOnFailure(maxRetryCount: 3));
+    });
 
 builder.Services.AddHealthChecks()
     .AddDbContextCheck<ConsolidationDbContext>("consolidation-db", tags: ["ready"]);

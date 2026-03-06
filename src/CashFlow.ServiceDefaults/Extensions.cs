@@ -23,6 +23,15 @@ public static class Extensions
 
     public static TBuilder AddServiceDefaults<TBuilder>(this TBuilder builder) where TBuilder : IHostApplicationBuilder
     {
+        if (builder.Environment.IsDevelopment())
+        {
+            builder.Services.Configure<ServiceProviderOptions>(options =>
+            {
+                options.ValidateScopes = true;
+                options.ValidateOnBuild = true;
+            });
+        }
+
         builder.ConfigureOpenTelemetry();
 
         builder.AddDefaultHealthChecks();

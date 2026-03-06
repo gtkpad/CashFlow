@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CashFlow.Consolidation.API.Features.GetDailyBalance;
 
-public class GetDailyBalanceHandler(ConsolidationDbContext db)
+public sealed class GetDailyBalanceHandler(ConsolidationDbContext db)
 {
     public async Task<GetDailyBalanceResponse?> HandleAsync(
         Guid merchantId, DateOnly date, CancellationToken ct = default)

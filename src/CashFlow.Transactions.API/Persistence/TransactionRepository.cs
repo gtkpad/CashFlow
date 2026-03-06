@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CashFlow.Transactions.API.Persistence;
 
-public class TransactionRepository(TransactionsDbContext db) : ITransactionRepository
+public sealed class TransactionRepository(TransactionsDbContext db) : ITransactionRepository
 {
     public async Task AddAsync(Transaction transaction, CancellationToken ct = default)
     {

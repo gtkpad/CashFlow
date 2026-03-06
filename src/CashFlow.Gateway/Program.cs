@@ -1,6 +1,9 @@
+using System.Diagnostics;
+using System.IO.Compression;
 using System.Text;
 using System.Threading.RateLimiting;
 using CashFlow.Gateway.Middleware;
+using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -54,11 +57,29 @@ builder.Services.AddCors(options =>
         }
         // Production without config: no origins allowed (default deny)
 
-        policy.AllowAnyHeader()
-              .AllowAnyMethod()
-              .AllowCredentials();
+        if (builder.Environment.IsDevelopment())
+        {
+            policy.AllowAnyHeader()
+                  .AllowAnyMethod();
+        }
+        else
+        {
+            policy.WithHeaders("Authorization", "Content-Type", "Accept", "X-Trace-Id")
+                  .WithMethods("GET", "POST", "PUT", "DELETE", "OPTIONS");
+        }
+
+        policy.AllowCredentials();
     });
 });
+
+builder.Services.AddResponseCompression(options =>
+{
+    options.EnableForHttps = true;
+    options.Providers.Add<BrotliCompressionProvider>();
+    options.Providers.Add<GzipCompressionProvider>();
+});
+builder.Services.Configure<BrotliCompressionProviderOptions>(options =>
+    options.Level = CompressionLevel.Fastest);
 
 builder.Services.AddRateLimiter(options =>
 {
@@ -77,6 +98,27 @@ var app = builder.Build();
 
 app.UseProductionHttpsSecurity();
 app.MapDefaultEndpoints();
+
+app.UseResponseCompression();
+
+// Security headers
+app.Use(async (context, next) =>
+{
+    context.Response.Headers["X-Content-Type-Options"] = "nosniff";
+    context.Response.Headers["X-Frame-Options"] = "DENY";
+    context.Response.Headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
+    context.Response.Headers["Permissions-Policy"] = "camera=(), microphone=()";
+    await next();
+});
+
+// Trace ID correlation header
+app.Use(async (context, next) =>
+{
+    var traceId = Activity.Current?.TraceId.ToString();
+    if (traceId is not null)
+        context.Response.Headers["X-Trace-Id"] = traceId;
+    await next();
+});
 
 app.UseRateLimiter();
 app.UseCors("GatewayPolicy");

@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CashFlow.Consolidation.API.Persistence;
 
-public class ConsolidationDbContext(DbContextOptions<ConsolidationDbContext> options)
+public sealed class ConsolidationDbContext(DbContextOptions<ConsolidationDbContext> options)
     : DbContext(options)
 {
     public DbSet<DailySummary> DailySummaries => Set<DailySummary>();

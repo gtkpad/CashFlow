@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CashFlow.Consolidation.API.Persistence;
 
-public class DailySummaryRepository(ConsolidationDbContext db) : IDailySummaryRepository
+public sealed class DailySummaryRepository(ConsolidationDbContext db) : IDailySummaryRepository
 {
     public async Task<DailySummary?> GetByDateAndMerchant(
         MerchantId merchantId, DateOnly date, CancellationToken ct = default)
@@ -16,10 +16,5 @@ public class DailySummaryRepository(ConsolidationDbContext db) : IDailySummaryRe
     public async Task AddAsync(DailySummary summary, CancellationToken ct = default)
     {
         await db.DailySummaries.AddAsync(summary, ct);
-    }
-
-    public Task Save(DailySummary summary, CancellationToken ct = default)
-    {
-        return Task.CompletedTask;
     }
 }

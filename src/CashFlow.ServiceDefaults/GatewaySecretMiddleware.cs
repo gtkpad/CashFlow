@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
@@ -5,7 +7,7 @@ using Microsoft.Extensions.Logging;
 
 namespace CashFlow.ServiceDefaults;
 
-public class GatewaySecretMiddleware(
+public sealed class GatewaySecretMiddleware(
     RequestDelegate next,
     IConfiguration configuration,
     IHostEnvironment environment,
@@ -39,7 +41,9 @@ public class GatewaySecretMiddleware(
         }
 
         var providedSecret = context.Request.Headers["X-Gateway-Secret"].ToString();
-        if (!string.Equals(expectedSecret, providedSecret, StringComparison.Ordinal))
+        var expectedBytes = Encoding.UTF8.GetBytes(expectedSecret);
+        var providedBytes = Encoding.UTF8.GetBytes(providedSecret);
+        if (!CryptographicOperations.FixedTimeEquals(expectedBytes, providedBytes))
         {
             context.Response.StatusCode = StatusCodes.Status403Forbidden;
             return;
