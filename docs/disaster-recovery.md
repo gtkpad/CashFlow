@@ -722,4 +722,4 @@ curl -v https://<gateway-fqdn>/alive
 
 ---
 
-> **Referência:** Para a arquitetura detalhada, ADRs e diagramas C4, consulte [`ARCHITECTURE.md`](../ARCHITECTURE.md).
+> **Referência:** Para a arquitetura detalhada, ADRs e diagramas C4, consulte [`architecture.md`](architecture.md) e [`adr/`](adr/).

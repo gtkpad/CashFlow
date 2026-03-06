@@ -70,7 +70,7 @@ O sistema adota uma arquitetura de **quatro serviços deployáveis independentes
 
 O isolamento de processos garante que a falha no serviço de consolidado **nunca** afete a disponibilidade do serviço de lançamentos — requisito crítico do sistema.
 
-Para detalhes completos, diagramas C4 e ADRs, consulte [`ARCHITECTURE.md`](ARCHITECTURE.md).
+Para detalhes completos, diagramas C4 e ADRs, consulte [`docs/architecture.md`](docs/architecture.md) e [`docs/adr/`](docs/adr/).
 
 ---
 
@@ -113,7 +113,8 @@ CashFlow.slnx
 │   ├── CashFlow.ArchitectureTests/       — Testes de dependência (NetArchTest)
 │   ├── CashFlow.E2ETests/               — Testes E2E com Aspire Testing
 │   └── load/                             — Testes de carga com k6
-├── ARCHITECTURE.md                        — Documento de arquitetura completo (C4, ADRs, domínio, NFRs)
+├── docs/architecture.md                    — Documento de arquitetura completo (C4, domínio, NFRs)
+├── docs/adr/                               — Architecture Decision Records (10 ADRs)
 └── infra/                                 — Bicep modules para Azure Container Apps
 ```
 
@@ -365,7 +366,7 @@ Resposta:
 
 ## Decisões Arquiteturais
 
-As decisões estão documentadas como **Architecture Decision Records (ADRs)** em [`ARCHITECTURE.md`](ARCHITECTURE.md):
+As decisões estão documentadas como **Architecture Decision Records (ADRs)** em [`docs/adr/`](docs/adr/):
 
 | ADR | Decisão |
 |---|---|
@@ -423,5 +424,6 @@ O projeto possui pipelines automatizadas no GitHub Actions:
 
 | Documento | Descrição |
 |---|---|
-| [`ARCHITECTURE.md`](ARCHITECTURE.md) | Documento de arquitetura completo (C4, ADRs, domínio, NFRs) |
+| [`docs/architecture.md`](docs/architecture.md) | Documento de arquitetura completo (C4, domínio, NFRs) |
+| [`docs/adr/`](docs/adr/) | Architecture Decision Records (10 ADRs individuais) |
 | [`docs/disaster-recovery.md`](docs/disaster-recovery.md) | Plano de Disaster Recovery (runbooks, escalation, RPO/RTO, teste de restore) |
