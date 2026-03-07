@@ -16,7 +16,8 @@ builder.Services.AddReverseProxy()
 
 var validAudiences = builder.Configuration.GetSection("Identity:ValidAudiences").Get<string[]>();
 
-var jwtSigningKey = builder.Configuration["Jwt:SigningKey"]!;
+var jwtSigningKey = builder.Configuration["Jwt:SigningKey"]
+    ?? throw new InvalidOperationException("Jwt:SigningKey configuration is required");
 
 builder.Services.AddAuthentication("Bearer")
     .AddJwtBearer("Bearer", options =>
@@ -101,22 +102,20 @@ app.MapDefaultEndpoints();
 
 app.UseResponseCompression();
 
-// Security headers
+// Security headers + trace ID correlation
 app.Use(async (context, next) =>
 {
-    context.Response.Headers["X-Content-Type-Options"] = "nosniff";
-    context.Response.Headers["X-Frame-Options"] = "DENY";
-    context.Response.Headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
-    context.Response.Headers["Permissions-Policy"] = "camera=(), microphone=()";
-    await next();
-});
+    var headers = context.Response.Headers;
+    headers["X-Content-Type-Options"] = "nosniff";
+    headers["X-Frame-Options"] = "DENY";
+    headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
+    headers["Permissions-Policy"] = "camera=(), microphone=()";
+    headers["Content-Security-Policy"] = "default-src 'none'; frame-ancestors 'none'";
 
-// Trace ID correlation header
-app.Use(async (context, next) =>
-{
     var traceId = Activity.Current?.TraceId.ToString();
     if (traceId is not null)
-        context.Response.Headers["X-Trace-Id"] = traceId;
+        headers["X-Trace-Id"] = traceId;
+
     await next();
 });
 
