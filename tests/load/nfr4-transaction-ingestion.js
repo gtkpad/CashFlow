@@ -1,5 +1,6 @@
 import http from 'k6/http';
 import { check } from 'k6';
+import { textSummary } from 'https://jslib.k6.io/k6-summary/0.0.1/index.js';
 
 // NFR-4: Transaction ingestion must sustain 50 req/s with p95 < 500ms
 // Usage: k6 run tests/load/nfr4-transaction-ingestion.js
@@ -73,4 +74,32 @@ export default function (data) {
   check(res, {
     'status is 201': (r) => r.status === 201,
   });
+}
+
+export function handleSummary(data) {
+  const p95 = data.metrics.http_req_duration.values['p(95)'];
+  const failRate = data.metrics.http_req_failed.values.rate;
+  const result = {
+    nfr: 'NFR-4',
+    description: 'Transaction ingestion sustains 50 req/s with p95 < 500ms',
+    timestamp: new Date().toISOString(),
+    thresholds: {
+      p95_ms: { expected: 500, actual: Math.round(p95 * 100) / 100, pass: p95 < 500 },
+      error_rate: { expected: 0.01, actual: Math.round(failRate * 10000) / 10000, pass: failRate < 0.01 },
+    },
+    summary: {
+      total_requests: data.metrics.http_reqs.values.count,
+      duration_s: 120,
+      rps_target: 50,
+      p50_ms: Math.round(data.metrics.http_req_duration.values['p(50)'] * 100) / 100,
+      p90_ms: Math.round(data.metrics.http_req_duration.values['p(90)'] * 100) / 100,
+      p95_ms: Math.round(p95 * 100) / 100,
+      p99_ms: Math.round(data.metrics.http_req_duration.values['p(99)'] * 100) / 100,
+    },
+    overall_pass: p95 < 500 && failRate < 0.01,
+  };
+  return {
+    'tests/load/results/nfr4-result.json': JSON.stringify(result, null, 2),
+    stdout: textSummary(data, { indent: ' ', enableColors: true }),
+  };
 }

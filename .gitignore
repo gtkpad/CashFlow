@@ -286,3 +286,6 @@ __pycache__/
 riderModule.iml
 /_ReSharper.Caches/
 .idea/
+
+# k6 load test results
+tests/load/results/
