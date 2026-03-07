@@ -7,7 +7,7 @@ public record GetDailyBalanceResponse(
     DateOnly Date, decimal TotalCredits, decimal TotalDebits,
     decimal Balance, int TransactionCount);
 
-public class GetDailyBalanceEndpoint : ICarterModule
+public sealed class GetDailyBalanceEndpoint : ICarterModule
 {
     public void AddRoutes(IEndpointRouteBuilder app)
     {

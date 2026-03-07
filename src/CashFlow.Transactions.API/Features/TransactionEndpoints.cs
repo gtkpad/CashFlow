@@ -6,7 +6,7 @@ using FluentValidation;
 
 namespace CashFlow.Transactions.API.Features;
 
-public class TransactionEndpoints : ICarterModule
+public sealed class TransactionEndpoints : ICarterModule
 {
     public void AddRoutes(IEndpointRouteBuilder app)
     {

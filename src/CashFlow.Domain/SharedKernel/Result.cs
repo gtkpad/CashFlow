@@ -1,6 +1,6 @@
 namespace CashFlow.Domain.SharedKernel;
 
-public class Result<T>
+public sealed class Result<T>
 {
     private readonly T? _value;
 
