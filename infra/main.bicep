@@ -36,6 +36,24 @@ resource rg 'Microsoft.Resources/resourceGroups@2022-09-01' = {
   tags: tags
 }
 
+module secrets_identity 'secrets-identity/secrets-identity.module.bicep' = {
+  name: 'secrets-identity'
+  scope: rg
+  params: {
+    location: location
+  }
+}
+module keyvault 'keyvault/keyvault.module.bicep' = {
+  name: 'keyvault'
+  scope: rg
+  params: {
+    location: location
+    gateway_secret: gateway_secret
+    jwt_signing_key: jwt_signing_key
+    messaging_password: messaging_password
+    secrets_identity_principal_id: secrets_identity.outputs.principalId
+  }
+}
 module consolidation_identity 'consolidation-identity/consolidation-identity.module.bicep' = {
   name: 'consolidation-identity'
   scope: rg
@@ -129,6 +147,8 @@ output TRANSACTIONS_IDENTITY_CLIENTID string = transactions_identity.outputs.cli
 output TRANSACTIONS_IDENTITY_ID string = transactions_identity.outputs.id
 output TRANSACTIONS_IDENTITY_PRINCIPALNAME string = transactions_identity.outputs.principalName
 output APPLICATIONINSIGHTS_CONNECTION_STRING string = env.outputs.APPLICATIONINSIGHTS_CONNECTION_STRING
+output KEYVAULT_URI string = keyvault.outputs.vaultUri
+output SECRETS_IDENTITY_ID string = secrets_identity.outputs.id
 
 module monitoring 'monitoring/alerts.module.bicep' = if (!empty(alert_email_address)) {
   name: 'monitoring-alerts'

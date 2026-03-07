@@ -15,11 +15,9 @@ param postgres_outputs_connectionstring string
 
 param postgres_outputs_hostname string
 
-@secure()
-param jwt_signing_key_value string
+param keyvault_uri string
 
-@secure()
-param gateway_secret_value string
+param secrets_identity_id string
 
 param identity_identity_outputs_clientid string
 
@@ -41,11 +39,13 @@ resource identity 'Microsoft.App/containerApps@2025-02-02-preview' = {
       secrets: [
         {
           name: 'jwt--signingkey'
-          value: jwt_signing_key_value
+          keyVaultUrl: '${keyvault_uri}secrets/jwt-signing-key'
+          identity: secrets_identity_id
         }
         {
           name: 'gateway--secret'
-          value: gateway_secret_value
+          keyVaultUrl: '${keyvault_uri}secrets/gateway-secret'
+          identity: secrets_identity_id
         }
       ]
       activeRevisionsMode: 'Single'
@@ -195,6 +195,7 @@ resource identity 'Microsoft.App/containerApps@2025-02-02-preview' = {
     userAssignedIdentities: {
       '${identity_identity_outputs_id}': { }
       '${env_outputs_azure_container_registry_managed_identity_id}': { }
+      '${secrets_identity_id}': { }
     }
   }
 }

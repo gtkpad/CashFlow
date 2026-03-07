@@ -69,34 +69,4 @@ jobs:
         run: azd provision --no-prompt
 
       - name: Deploy Application
-        env:
-          # AZD_INITIAL_ENVIRONMENT_CONFIG provides Aspire securedParameter values
-          # for azd deploy. Parameter names must match AddParameter() in AppHost.cs.
-          # See: https://github.com/dotnet/aspire/discussions/4083
-          AZURE_GATEWAY_SECRET: ${{ secrets.AZURE_GATEWAY_SECRET }}
-          AZURE_JWT_SIGNING_KEY: ${{ secrets.AZURE_JWT_SIGNING_KEY }}
-          AZURE_MESSAGING_PASSWORD: ${{ secrets.AZURE_MESSAGING_PASSWORD }}
-        run: |
-          export AZD_INITIAL_ENVIRONMENT_CONFIG=$(jq -n \
-            --arg gs "$AZURE_GATEWAY_SECRET" \
-            --arg jk "$AZURE_JWT_SIGNING_KEY" \
-            --arg mp "$AZURE_MESSAGING_PASSWORD" \
-            '{"infra":{"parameters":{"gateway-secret":$gs,"jwt-signing-key":$jk,"messaging-password":$mp}}}')
-          azd deploy --no-prompt 2>&1 || DEPLOY_FAILED=true
-
-          if [ "$DEPLOY_FAILED" = "true" ]; then
-            echo "::warning::azd deploy partially failed — applying identity fallback"
-            RG="rg-${AZURE_ENV_NAME}"
-            REGISTRY=$(az containerapp show -n gateway -g "$RG" \
-              --query 'properties.configuration.registries[0].server' -o tsv)
-            REPO="cashflow/identity-${AZURE_ENV_NAME}"
-            TAG=$(az acr repository show-tags -n "${REGISTRY%%.*}" \
-              --repository "$REPO" --orderby time_desc --top 1 -o tsv)
-            IMAGE="${REGISTRY}/${REPO}:${TAG}"
-            echo "Deploying identity with image: $IMAGE"
-            az containerapp secret set -n identity -g "$RG" \
-              --secrets "gateway--secret=$AZURE_GATEWAY_SECRET" \
-                        "jwt--signingkey=$AZURE_JWT_SIGNING_KEY"
-            az containerapp update -n identity -g "$RG" --image "$IMAGE"
-            echo "Identity deployed via az CLI fallback"
-          fi
+        run: azd deploy --no-prompt

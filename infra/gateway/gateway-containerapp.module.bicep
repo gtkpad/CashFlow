@@ -9,11 +9,9 @@ param gateway_containerimage string
 
 param gateway_containerport string
 
-@secure()
-param jwt_signing_key_value string
+param keyvault_uri string
 
-@secure()
-param gateway_secret_value string
+param secrets_identity_id string
 
 param env_outputs_azure_container_registry_endpoint string
 
@@ -31,11 +29,13 @@ resource gateway 'Microsoft.App/containerApps@2025-02-02-preview' = {
       secrets: [
         {
           name: 'jwt--signingkey'
-          value: jwt_signing_key_value
+          keyVaultUrl: '${keyvault_uri}secrets/jwt-signing-key'
+          identity: secrets_identity_id
         }
         {
           name: 'gateway--secret'
-          value: gateway_secret_value
+          keyVaultUrl: '${keyvault_uri}secrets/gateway-secret'
+          identity: secrets_identity_id
         }
       ]
       activeRevisionsMode: 'Single'
@@ -200,6 +200,7 @@ resource gateway 'Microsoft.App/containerApps@2025-02-02-preview' = {
     type: 'UserAssigned'
     userAssignedIdentities: {
       '${env_outputs_azure_container_registry_managed_identity_id}': { }
+      '${secrets_identity_id}': { }
     }
   }
 }

@@ -5,8 +5,9 @@ param env_outputs_azure_container_apps_environment_default_domain string
 
 param env_outputs_azure_container_apps_environment_id string
 
-@secure()
-param messaging_password_value string
+param keyvault_uri string
+
+param secrets_identity_id string
 
 param env_outputs_volumes_messaging_0 string
 
@@ -18,7 +19,8 @@ resource messaging 'Microsoft.App/containerApps@2025-01-01' = {
       secrets: [
         {
           name: 'rabbitmq-default-pass'
-          value: messaging_password_value
+          keyVaultUrl: '${keyvault_uri}secrets/messaging-password'
+          identity: secrets_identity_id
         }
       ]
       activeRevisionsMode: 'Single'
@@ -68,6 +70,12 @@ resource messaging 'Microsoft.App/containerApps@2025-01-01' = {
           storageName: env_outputs_volumes_messaging_0
         }
       ]
+    }
+  }
+  identity: {
+    type: 'UserAssigned'
+    userAssignedIdentities: {
+      '${secrets_identity_id}': { }
     }
   }
 }
