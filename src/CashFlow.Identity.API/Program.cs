@@ -17,18 +17,23 @@ builder.Services.AddHealthChecks()
 builder.Services.AddIdentityApiEndpoints<IdentityUser>()
     .AddEntityFrameworkStores<IdentityDbContext>();
 
-builder.Services.Configure<BearerTokenOptions>(IdentityConstants.BearerScheme, options =>
+builder.Services.AddSingleton<JwtTokenProtector>(sp =>
 {
-    var signingKey = builder.Configuration["Jwt:SigningKey"]!;
-    var issuer = "cashflow-identity";
-    var audience = builder.Configuration["Identity:Audience"] ?? "cashflow-api";
-
-    var protector = new JwtTokenProtector(signingKey, issuer, audience);
-    options.BearerTokenProtector = protector;
-    options.RefreshTokenProtector = protector;
-    options.BearerTokenExpiration = TimeSpan.FromHours(1);
-    options.RefreshTokenExpiration = TimeSpan.FromDays(7);
+    var signingKey = builder.Configuration["Jwt:SigningKey"]
+        ?? throw new InvalidOperationException("Jwt:SigningKey configuration is required");
+    var logger = sp.GetRequiredService<ILogger<JwtTokenProtector>>();
+    return new JwtTokenProtector(signingKey, "cashflow-identity",
+        builder.Configuration["Identity:Audience"] ?? "cashflow-api", logger);
 });
+
+builder.Services.AddOptions<BearerTokenOptions>(IdentityConstants.BearerScheme)
+    .Configure<JwtTokenProtector>((options, protector) =>
+    {
+        options.BearerTokenProtector = protector;
+        options.RefreshTokenProtector = protector;
+        options.BearerTokenExpiration = TimeSpan.FromHours(1);
+        options.RefreshTokenExpiration = TimeSpan.FromDays(7);
+    });
 
 builder.Services.Configure<IdentityOptions>(options =>
 {

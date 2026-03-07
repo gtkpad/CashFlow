@@ -3,11 +3,14 @@ using System.Security.Claims;
 using System.Text;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 
 namespace CashFlow.Identity.API.Auth;
 
-internal sealed class JwtTokenProtector(string signingKey, string issuer, string audience)
+internal sealed class JwtTokenProtector(
+    string signingKey, string issuer, string audience,
+    ILogger<JwtTokenProtector> logger)
     : ISecureDataFormat<AuthenticationTicket>
 {
     private readonly SymmetricSecurityKey _key = new(Encoding.UTF8.GetBytes(signingKey));
@@ -63,8 +66,14 @@ internal sealed class JwtTokenProtector(string signingKey, string issuer, string
 
             return new AuthenticationTicket(principal, properties, IdentityConstants.BearerScheme);
         }
-        catch
+        catch (SecurityTokenExpiredException ex)
         {
+            logger.LogDebug(ex, "JWT token expired");
+            return null;
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "JWT validation failed");
             return null;
         }
     }

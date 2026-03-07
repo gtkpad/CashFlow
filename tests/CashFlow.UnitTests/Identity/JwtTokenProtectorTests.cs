@@ -4,6 +4,7 @@ using CashFlow.Identity.API.Auth;
 using FluentAssertions;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace CashFlow.UnitTests.Identity;
 
@@ -13,7 +14,8 @@ public class JwtTokenProtectorTests
     private const string Issuer = "test-issuer";
     private const string Audience = "test-audience";
 
-    private readonly JwtTokenProtector _sut = new(SigningKey, Issuer, Audience);
+    private readonly JwtTokenProtector _sut = new(SigningKey, Issuer, Audience,
+        NullLogger<JwtTokenProtector>.Instance);
 
     [Fact]
     public void Protect_ShouldReturnValidJwtString()
@@ -103,7 +105,8 @@ public class JwtTokenProtectorTests
     public void Unprotect_WithWrongSigningKey_ShouldReturnNull()
     {
         var otherProtector = new JwtTokenProtector(
-            "a-completely-different-signing-key-that-is-also-long-enough!", Issuer, Audience);
+            "a-completely-different-signing-key-that-is-also-long-enough!", Issuer, Audience,
+            NullLogger<JwtTokenProtector>.Instance);
 
         var ticket = CreateTicket(new Claim(ClaimTypes.NameIdentifier, "user-1"));
         var token = otherProtector.Protect(ticket);
