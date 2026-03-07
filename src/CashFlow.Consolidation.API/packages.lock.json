@@ -394,11 +394,6 @@
         "resolved": "13.0.3",
         "contentHash": "HrC5BXdl00IP9zeV+0Z848QWPAoCr9P3bDEZguI+gkLcBKAOxix/tLEAAHC+UvDNPv4a2d18lOReHMOagPa+zQ=="
       },
-      "Npgsql": {
-        "type": "Transitive",
-        "resolved": "10.0.0",
-        "contentHash": "xZAYhPOU2rUIFpV48xsqhCx9vXs6Y+0jX2LCoSEfDFYMw9jtAOUk3iQsCnDLrFIv9NT3JGMihn7nnuZsPKqJmA=="
-      },
       "Npgsql.DependencyInjection": {
         "type": "Transitive",
         "resolved": "10.0.0",
@@ -556,6 +551,7 @@
           "Azure.Monitor.OpenTelemetry.AspNetCore": "[1.4.0, )",
           "Microsoft.Extensions.Http.Resilience": "[10.3.0, )",
           "Microsoft.Extensions.ServiceDiscovery": "[10.3.0, )",
+          "Npgsql": "[10.0.0, )",
           "OpenTelemetry.Exporter.OpenTelemetryProtocol": "[1.14.0, )",
           "OpenTelemetry.Extensions.Hosting": "[1.14.0, )",
           "OpenTelemetry.Instrumentation.AspNetCore": "[1.14.0, )",
@@ -614,6 +610,12 @@
         "dependencies": {
           "Microsoft.Extensions.ServiceDiscovery.Abstractions": "10.3.0"
         }
+      },
+      "Npgsql": {
+        "type": "CentralTransitive",
+        "requested": "[10.0.0, )",
+        "resolved": "10.0.0",
+        "contentHash": "xZAYhPOU2rUIFpV48xsqhCx9vXs6Y+0jX2LCoSEfDFYMw9jtAOUk3iQsCnDLrFIv9NT3JGMihn7nnuZsPKqJmA=="
       },
       "OpenTelemetry.Exporter.OpenTelemetryProtocol": {
         "type": "CentralTransitive",
