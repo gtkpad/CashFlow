@@ -1,0 +1,206 @@
+@description('The location for the resource(s) to be deployed.')
+param location string = resourceGroup().location
+
+param env_outputs_azure_container_apps_environment_default_domain string
+
+param env_outputs_azure_container_apps_environment_id string
+
+param gateway_containerimage string
+
+param gateway_containerport string
+
+param keyvault_uri string
+
+param secrets_identity_id string
+
+param env_outputs_azure_container_registry_endpoint string
+
+param env_outputs_azure_container_registry_managed_identity_id string
+
+param applicationinsights_connection_string string = ''
+
+param otel_service_version string = '1.0.0'
+
+resource gateway 'Microsoft.App/containerApps@2025-02-02-preview' = {
+  name: 'gateway'
+  location: location
+  properties: {
+    configuration: {
+      secrets: [
+        {
+          name: 'jwt--signingkey'
+          keyVaultUrl: '${keyvault_uri}secrets/jwt-signing-key'
+          identity: secrets_identity_id
+        }
+        {
+          name: 'gateway--secret'
+          keyVaultUrl: '${keyvault_uri}secrets/gateway-secret'
+          identity: secrets_identity_id
+        }
+      ]
+      activeRevisionsMode: 'Single'
+      ingress: {
+        external: true
+        targetPort: int(gateway_containerport)
+        transport: 'http'
+      }
+      registries: [
+        {
+          server: env_outputs_azure_container_registry_endpoint
+          identity: env_outputs_azure_container_registry_managed_identity_id
+        }
+      ]
+      runtime: {
+        dotnet: {
+          autoConfigureDataProtection: true
+        }
+      }
+    }
+    environmentId: env_outputs_azure_container_apps_environment_id
+    template: {
+      containers: [
+        {
+          image: gateway_containerimage
+          name: 'gateway'
+          env: [
+            {
+              name: 'OTEL_DOTNET_EXPERIMENTAL_OTLP_EMIT_EXCEPTION_LOG_ATTRIBUTES'
+              value: 'true'
+            }
+            {
+              name: 'OTEL_DOTNET_EXPERIMENTAL_OTLP_EMIT_EVENT_LOG_ATTRIBUTES'
+              value: 'true'
+            }
+            {
+              name: 'OTEL_DOTNET_EXPERIMENTAL_OTLP_RETRY'
+              value: 'in_memory'
+            }
+            {
+              name: 'ASPNETCORE_FORWARDEDHEADERS_ENABLED'
+              value: 'true'
+            }
+            {
+              name: 'HTTP_PORTS'
+              value: gateway_containerport
+            }
+            {
+              name: 'IDENTITY_HTTP'
+              value: 'http://identity.internal.${env_outputs_azure_container_apps_environment_default_domain}'
+            }
+            {
+              name: 'services__identity__http__0'
+              value: 'http://identity.internal.${env_outputs_azure_container_apps_environment_default_domain}'
+            }
+            {
+              name: 'IDENTITY_HTTPS'
+              value: 'https://identity.internal.${env_outputs_azure_container_apps_environment_default_domain}'
+            }
+            {
+              name: 'services__identity__https__0'
+              value: 'https://identity.internal.${env_outputs_azure_container_apps_environment_default_domain}'
+            }
+            {
+              name: 'TRANSACTIONS_HTTP'
+              value: 'http://transactions.internal.${env_outputs_azure_container_apps_environment_default_domain}'
+            }
+            {
+              name: 'services__transactions__http__0'
+              value: 'http://transactions.internal.${env_outputs_azure_container_apps_environment_default_domain}'
+            }
+            {
+              name: 'TRANSACTIONS_HTTPS'
+              value: 'https://transactions.internal.${env_outputs_azure_container_apps_environment_default_domain}'
+            }
+            {
+              name: 'services__transactions__https__0'
+              value: 'https://transactions.internal.${env_outputs_azure_container_apps_environment_default_domain}'
+            }
+            {
+              name: 'CONSOLIDATION_HTTP'
+              value: 'http://consolidation.internal.${env_outputs_azure_container_apps_environment_default_domain}'
+            }
+            {
+              name: 'services__consolidation__http__0'
+              value: 'http://consolidation.internal.${env_outputs_azure_container_apps_environment_default_domain}'
+            }
+            {
+              name: 'CONSOLIDATION_HTTPS'
+              value: 'https://consolidation.internal.${env_outputs_azure_container_apps_environment_default_domain}'
+            }
+            {
+              name: 'services__consolidation__https__0'
+              value: 'https://consolidation.internal.${env_outputs_azure_container_apps_environment_default_domain}'
+            }
+            {
+              name: 'Identity__ValidAudiences__0'
+              value: 'cashflow-api'
+            }
+            {
+              name: 'Jwt__SigningKey'
+              secretRef: 'jwt--signingkey'
+            }
+            {
+              name: 'Gateway__Secret'
+              secretRef: 'gateway--secret'
+            }
+            {
+              name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
+              value: applicationinsights_connection_string
+            }
+            {
+              name: 'OTEL_SERVICE_VERSION'
+              value: otel_service_version
+            }
+          ]
+          probes: [
+            {
+              type: 'liveness'
+              httpGet: {
+                path: '/alive'
+                port: int(gateway_containerport)
+              }
+              initialDelaySeconds: 5
+              periodSeconds: 10
+              failureThreshold: 3
+              successThreshold: 1
+              timeoutSeconds: 5
+            }
+            {
+              type: 'readiness'
+              httpGet: {
+                path: '/health'
+                port: int(gateway_containerport)
+              }
+              initialDelaySeconds: 10
+              periodSeconds: 15
+              failureThreshold: 3
+              successThreshold: 1
+              timeoutSeconds: 5
+            }
+            {
+              type: 'startup'
+              httpGet: {
+                path: '/alive'
+                port: int(gateway_containerport)
+              }
+              initialDelaySeconds: 3
+              periodSeconds: 5
+              failureThreshold: 12
+              timeoutSeconds: 5
+            }
+          ]
+        }
+      ]
+      scale: {
+        minReplicas: 1
+      }
+    }
+  }
+  identity: {
+    type: 'UserAssigned'
+    userAssignedIdentities: {
+      '${env_outputs_azure_container_registry_managed_identity_id}': { }
+      '${secrets_identity_id}': { }
+    }
+  }
+}
