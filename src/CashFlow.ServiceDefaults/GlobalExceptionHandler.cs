@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Npgsql;
 
 namespace CashFlow.ServiceDefaults;
 
@@ -52,7 +53,5 @@ public sealed class GlobalExceptionHandler(
 
     private static bool IsDbDuplicateKeyException(Exception exception) =>
         exception.GetType().Name == "DbUpdateException"
-        && exception.InnerException?.Message is { } msg
-        && (msg.Contains("duplicate key", StringComparison.OrdinalIgnoreCase)
-            || msg.Contains("unique constraint", StringComparison.OrdinalIgnoreCase));
+        && exception.InnerException is PostgresException { SqlState: "23505" };
 }

@@ -12,6 +12,7 @@
         <!-- Persistence -->
         <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="10.0.3" />
         <PackageVersion Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.3" />
+        <PackageVersion Include="Npgsql" Version="10.0.0" />
         <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.0" />
         <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.3" />
 
@@ -49,6 +50,9 @@
         <PackageVersion Include="OpenTelemetry.Instrumentation.Runtime" Version="1.14.0" />
         <PackageVersion Include="Azure.Monitor.OpenTelemetry.AspNetCore" Version="1.4.0" />
         <PackageVersion Include="OpenTelemetry.Instrumentation.EntityFrameworkCore" Version="1.14.0-beta.1" />
+
+        <!-- Benchmarks -->
+        <PackageVersion Include="BenchmarkDotNet" Version="0.14.0" />
 
         <!-- Testing -->
         <PackageVersion Include="coverlet.collector" Version="6.0.4" />

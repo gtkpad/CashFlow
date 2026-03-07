@@ -1,6 +1,7 @@
 using CashFlow.ServiceDefaults;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
+using Npgsql;
 
 namespace CashFlow.UnitTests.ServiceDefaults;
 
@@ -56,7 +57,7 @@ public class GlobalExceptionHandlerTests
     [Fact]
     public void MapException_DbUpdateExceptionWithDuplicateKey_ShouldReturn409()
     {
-        var inner = new Exception("duplicate key value violates unique constraint");
+        var inner = new PostgresException("duplicate key value violates unique constraint", "ERROR", "ERROR", "23505");
         var exception = new DbUpdateException("db error", inner);
 
         var (statusCode, title) = GlobalExceptionHandler.MapException(exception);
@@ -68,7 +69,7 @@ public class GlobalExceptionHandlerTests
     [Fact]
     public void MapException_DbUpdateExceptionWithUniqueConstraint_ShouldReturn409()
     {
-        var inner = new Exception("unique constraint violation on table X");
+        var inner = new PostgresException("unique constraint violation on table X", "ERROR", "ERROR", "23505");
         var exception = new DbUpdateException("db error", inner);
 
         var (statusCode, title) = GlobalExceptionHandler.MapException(exception);
