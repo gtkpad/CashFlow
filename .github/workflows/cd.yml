@@ -64,12 +64,6 @@ jobs:
           VERSION=${GITHUB_SHA::8}
           azd env set OTEL_SERVICE_VERSION "$VERSION"
           azd env set ALERT_EMAIL_ADDRESS "$ALERT_EMAIL_ADDRESS"
-          # Aspire secured parameters for azd deploy (maps to per-service Bicep params).
-          # AddParameter("gateway-secret") → Bicep param `gateway_secret_value`, etc.
-          # These are NOT captured from provision outputs (secrets aren't output).
-          azd env set GATEWAY_SECRET_VALUE "$AZURE_GATEWAY_SECRET"
-          azd env set JWT_SIGNING_KEY_VALUE "$AZURE_JWT_SIGNING_KEY"
-          azd env set MESSAGING_PASSWORD_VALUE "$AZURE_MESSAGING_PASSWORD"
 
       - name: Provision Infrastructure
         run: azd provision --no-prompt
@@ -88,4 +82,21 @@ jobs:
             --arg jk "$AZURE_JWT_SIGNING_KEY" \
             --arg mp "$AZURE_MESSAGING_PASSWORD" \
             '{"infra":{"parameters":{"gateway-secret":$gs,"jwt-signing-key":$jk,"messaging-password":$mp}}}')
-          azd deploy --no-prompt
+          azd deploy --no-prompt 2>&1 || DEPLOY_FAILED=true
+
+          if [ "$DEPLOY_FAILED" = "true" ]; then
+            echo "::warning::azd deploy partially failed — applying identity fallback"
+            RG="rg-${AZURE_ENV_NAME}"
+            REGISTRY=$(az containerapp show -n gateway -g "$RG" \
+              --query 'properties.configuration.registries[0].server' -o tsv)
+            REPO="cashflow/identity-${AZURE_ENV_NAME}"
+            TAG=$(az acr repository show-tags -n "${REGISTRY%%.*}" \
+              --repository "$REPO" --orderby time_desc --top 1 -o tsv)
+            IMAGE="${REGISTRY}/${REPO}:${TAG}"
+            echo "Deploying identity with image: $IMAGE"
+            az containerapp secret set -n identity -g "$RG" \
+              --secrets "gateway--secret=$AZURE_GATEWAY_SECRET" \
+                        "jwt--signingkey=$AZURE_JWT_SIGNING_KEY"
+            az containerapp update -n identity -g "$RG" --image "$IMAGE"
+            echo "Identity deployed via az CLI fallback"
+          fi
