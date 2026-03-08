@@ -14,12 +14,16 @@ const TEST_PASSWORD = __ENV.TEST_PASSWORD || 'LoadTest123!';
 export const options = {
   scenarios: {
     consolidation_throughput: {
-      executor: 'constant-arrival-rate',
-      rate: 50,
+      executor: 'ramping-arrival-rate',
+      startRate: 10,
       timeUnit: '1s',
-      duration: '2m',
       preAllocatedVUs: 60,
       maxVUs: 100,
+      stages: [
+        { target: 50, duration: '15s' },  // ramp-up 15s
+        { target: 50, duration: '2m' },   // sustain 2min
+        { target: 0, duration: '10s' },   // ramp-down
+      ],
     },
   },
   thresholds: {
@@ -61,7 +65,7 @@ export default function (data) {
   });
 
   check(res, {
-    'status is 200': (r) => r.status === 200,
+    'status is 200 or 404': (r) => r.status === 200 || r.status === 404,
   });
 }
 

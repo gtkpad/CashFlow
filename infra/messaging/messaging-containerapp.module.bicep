@@ -52,6 +52,10 @@ resource messaging 'Microsoft.App/containerApps@2025-01-01' = {
               secretRef: 'rabbitmq-default-pass'
             }
           ]
+          resources: {
+            cpu: json('1.0')
+            memory: '2Gi'
+          }
           volumeMounts: [
             {
               volumeName: 'v0'

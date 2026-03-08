@@ -213,6 +213,17 @@ resource consolidation 'Microsoft.App/containerApps@2025-02-02-preview' = {
       ]
       scale: {
         minReplicas: 1
+        maxReplicas: 3
+        rules: [
+          {
+            name: 'http-scaling'
+            http: {
+              metadata: {
+                concurrentRequests: '30'
+              }
+            }
+          }
+        ]
       }
     }
   }

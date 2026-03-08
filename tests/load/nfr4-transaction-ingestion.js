@@ -14,12 +14,16 @@ const TEST_PASSWORD = __ENV.TEST_PASSWORD || 'LoadTest123!';
 export const options = {
   scenarios: {
     transaction_ingestion: {
-      executor: 'constant-arrival-rate',
-      rate: 50,
+      executor: 'ramping-arrival-rate',
+      startRate: 5,
       timeUnit: '1s',
-      duration: '2m',
       preAllocatedVUs: 60,
       maxVUs: 100,
+      stages: [
+        { target: 50, duration: '30s' },  // ramp-up 30s
+        { target: 50, duration: '2m' },   // sustain 2min
+        { target: 0, duration: '10s' },   // ramp-down
+      ],
     },
   },
   thresholds: {

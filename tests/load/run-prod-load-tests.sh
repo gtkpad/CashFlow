@@ -46,25 +46,45 @@ if [[ -z "$TOKEN" ]]; then
 fi
 echo "JWT token obtained."
 
-# ── Run NFR-2: Consolidation throughput ───────────────────────────────
+# ── Warm-up: Create seed transactions for consolidation ───────────────
 echo ""
-echo "Running NFR-2: Consolidation throughput (50 req/s, 2min)..."
-k6 run \
-  -e BASE_URL="$GATEWAY_URL" \
-  -e AUTH_URL="$GATEWAY_URL" \
-  -e TEST_EMAIL="$TEST_EMAIL" \
-  -e TEST_PASSWORD="$TEST_PASSWORD" \
-  "$SCRIPT_DIR/nfr2-consolidation-throughput.js" || true
+echo "Creating warm-up transactions for consolidation data..."
+TODAY=$(date -u +%Y-%m-%d)
+for i in $(seq 1 10); do
+  TYPE=$((i % 2 == 0 ? 1 : 2))
+  AMOUNT=$(awk "BEGIN{printf \"%.2f\", $i * 100 + 50}")
+  curl -sf -X POST "$GATEWAY_URL/api/v1/transactions" \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $TOKEN" \
+    -d "{\"referenceDate\":\"$TODAY\",\"type\":$TYPE,\"amount\":$AMOUNT,\"currency\":\"BRL\",\"description\":\"warm-up $i\"}" > /dev/null 2>&1 || true
+done
+echo "Waiting 10s for consolidation to process warm-up events..."
+sleep 10
 
-# ── Run NFR-4: Transaction ingestion ──────────────────────────────────
+# ── Run NFR-4: Transaction ingestion (first — generates data) ─────────
 echo ""
-echo "Running NFR-4: Transaction ingestion (50 req/s, 2min)..."
+echo "Running NFR-4: Transaction ingestion (ramping to 50 req/s)..."
 k6 run \
   -e BASE_URL="$GATEWAY_URL" \
   -e AUTH_URL="$GATEWAY_URL" \
   -e TEST_EMAIL="$TEST_EMAIL" \
   -e TEST_PASSWORD="$TEST_PASSWORD" \
   "$SCRIPT_DIR/nfr4-transaction-ingestion.js" || true
+
+# ── Wait for consolidation to catch up ────────────────────────────────
+echo ""
+echo "Waiting 30s for consolidation to process transaction events..."
+sleep 30
+
+# ── Run NFR-2: Consolidation throughput (after data exists) ───────────
+echo ""
+echo "Running NFR-2: Consolidation throughput (ramping to 50 req/s)..."
+k6 run \
+  -e BASE_URL="$GATEWAY_URL" \
+  -e AUTH_URL="$GATEWAY_URL" \
+  -e TEST_EMAIL="$TEST_EMAIL" \
+  -e TEST_PASSWORD="$TEST_PASSWORD" \
+  "$SCRIPT_DIR/nfr2-consolidation-throughput.js" || true
 
 # ── Consolidated report ───────────────────────────────────────────────
 echo ""

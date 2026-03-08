@@ -193,6 +193,17 @@ resource gateway 'Microsoft.App/containerApps@2025-02-02-preview' = {
       ]
       scale: {
         minReplicas: 1
+        maxReplicas: 5
+        rules: [
+          {
+            name: 'http-scaling'
+            http: {
+              metadata: {
+                concurrentRequests: '20'
+              }
+            }
+          }
+        ]
       }
     }
   }

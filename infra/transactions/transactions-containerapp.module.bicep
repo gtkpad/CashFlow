@@ -172,6 +172,10 @@ resource transactions 'Microsoft.App/containerApps@2025-02-02-preview' = {
               value: 'ManagedIdentityCredential'
             }
           ]
+          resources: {
+            cpu: json('1.0')
+            memory: '2Gi'
+          }
           probes: [
             {
               type: 'liveness'
@@ -213,6 +217,17 @@ resource transactions 'Microsoft.App/containerApps@2025-02-02-preview' = {
       ]
       scale: {
         minReplicas: 1
+        maxReplicas: 5
+        rules: [
+          {
+            name: 'http-scaling'
+            http: {
+              metadata: {
+                concurrentRequests: '15'
+              }
+            }
+          }
+        ]
       }
     }
   }
