@@ -336,6 +336,19 @@ Resposta:
 
 ## Requisitos Não-Funcionais
 
+### Resultados dos Testes de Carga em Produção
+
+> Executado em 2026-03-08 contra Azure Container Apps (Brazil South) com PostgreSQL `Standard_D2ds_v4` + PgBouncer.
+
+| NFR | Metric | Target | Actual | Status |
+|-----|--------|--------|--------|--------|
+| **NFR-2** | Consolidation p95 | < 200ms | **118.98ms** | PASS |
+| **NFR-2** | Error rate | < 1% | **0.01%** | PASS |
+| **NFR-4** | Transaction p95 | < 500ms | **139.17ms** | PASS |
+| **NFR-4** | Error rate | < 1% | **0.01%** | PASS |
+
+**Cenário:** 50 req/s sustentados por 2 minutos (ramping-arrival-rate), ~7.000 requests por teste.
+
 ### NFR-1: Isolamento de Falhas
 
 > *"O serviço de controle de lançamento não deve ficar indisponível se o sistema de consolidado diário cair."*
@@ -348,9 +361,9 @@ Resposta:
 
 > *"Em dias de picos, o serviço de consolidado diário recebe 50 requisições por segundo."*
 
-**Estratégia:** Output Cache diferenciado — datas passadas (imutáveis) com TTL de 1h; dia corrente com TTL de 5s + invalidação ativa pelo consumer. Thundering herd protection via `AllowLocking`.
+**Estratégia:** Output Cache diferenciado — datas passadas (imutáveis) com TTL de 1h; dia corrente com TTL de 5s + invalidação ativa pelo consumer. Thundering herd protection via `AllowLocking`. PgBouncer connection pooling (porta 6432) para multiplexação de conexões.
 
-**Validação:** Teste de carga k6 (`nfr2-consolidation-throughput.js`) — 50 req/s, 2min, p95 < 200ms.
+**Validação:** Teste de carga k6 (`nfr2-consolidation-throughput.js`) — 50 req/s, 2min, p95 = 118.98ms (target < 200ms).
 
 ### NFR-3: Máximo 5% de perda de requisições
 
@@ -358,9 +371,9 @@ Resposta:
 
 ### NFR-4: Capacidade de ingestão >= 50 msg/s
 
-**Estratégia:** Consumer com 2 instâncias concorrentes + UsePartitioner(8) particionado por `{MerchantId}:{ReferenceDate}`.
+**Estratégia:** Consumer com 2 instâncias concorrentes + UsePartitioner(8) particionado por `{MerchantId}:{ReferenceDate}`. PostgreSQL `Standard_D2ds_v4` (2 vCPUs dedicados, 3.450 IOPS) com PgBouncer built-in.
 
-**Validação:** Teste de carga k6 (`nfr4-transaction-ingestion.js`) — 50 req/s, 2min, p95 < 500ms, < 1% falha.
+**Validação:** Teste de carga k6 (`nfr4-transaction-ingestion.js`) — 50 req/s, 2min, p95 = 139.17ms (target < 500ms).
 
 ---
 
@@ -380,6 +393,8 @@ As decisões estão documentadas como **Architecture Decision Records (ADRs)** e
 | **ADR-008** | Alta Disponibilidade: Azure Container Apps + .NET Aspire |
 | **ADR-009** | Testes E2E com .NET Aspire Testing |
 | **ADR-010** | Handlers via DI Direto (sem MediatR) |
+| **ADR-011** | Auto-Scaling: HTTP Scaling Rules + Dimensionamento por Perfil de Carga |
+| **ADR-012** | PostgreSQL Scaling: General Purpose SKU + PgBouncer Built-in |
 
 ### Padrões Aplicados
 
@@ -425,5 +440,5 @@ O projeto possui pipelines automatizadas no GitHub Actions:
 | Documento | Descrição |
 |---|---|
 | [`docs/architecture.md`](docs/architecture.md) | Documento de arquitetura completo (C4, domínio, NFRs) |
-| [`docs/adr/`](docs/adr/) | Architecture Decision Records (10 ADRs individuais) |
+| [`docs/adr/`](docs/adr/) | Architecture Decision Records (12 ADRs individuais) |
 | [`docs/disaster-recovery.md`](docs/disaster-recovery.md) | Plano de Disaster Recovery (runbooks, escalation, RPO/RTO, teste de restore) |
