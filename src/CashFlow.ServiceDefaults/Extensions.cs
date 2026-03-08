@@ -89,13 +89,7 @@ public static class Extensions
                             && !context.Request.Path.StartsWithSegments(AlivenessEndpointPath)
                     )
                     .AddHttpClientInstrumentation()
-                    .AddEntityFrameworkCoreInstrumentation()
-                    .SetSampler(new TraceIdRatioBasedSampler(
-                        double.TryParse(
-                            builder.Configuration["OTEL_TRACES_SAMPLER_ARG"],
-                            out var ratio)
-                            ? ratio
-                            : builder.Environment.IsDevelopment() ? 1.0 : 0.1));
+                    .AddEntityFrameworkCoreInstrumentation();
             });
 
         builder.AddOpenTelemetryExporters();
@@ -119,8 +113,17 @@ public static class Extensions
 
         if (!string.IsNullOrEmpty(appInsightsConnectionString))
         {
+            var samplingRatio = double.TryParse(
+                builder.Configuration["OTEL_TRACES_SAMPLER_ARG"], out var ratio)
+                ? (float)ratio
+                : builder.Environment.IsDevelopment() ? 1.0f : 0.1f;
+
             builder.Services.AddOpenTelemetry()
-               .UseAzureMonitor(o => o.ConnectionString = appInsightsConnectionString);
+               .UseAzureMonitor(o =>
+               {
+                   o.ConnectionString = appInsightsConnectionString;
+                   o.SamplingRatio = samplingRatio;
+               });
         }
 
         return builder;
