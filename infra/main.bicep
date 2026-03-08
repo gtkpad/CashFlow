@@ -24,6 +24,12 @@ param jwt_signing_key string
 @secure()
 param messaging_password string
 
+@description('PostgreSQL SKU name.')
+param postgres_sku_name string = 'Standard_D2ds_v4'
+
+@description('PostgreSQL SKU tier.')
+param postgres_sku_tier string = 'GeneralPurpose'
+
 param alert_email_address string = ''
 
 var tags = {
@@ -109,6 +115,8 @@ module postgres 'postgres/postgres.module.bicep' = {
   scope: rg
   params: {
     location: location
+    skuName: postgres_sku_name
+    skuTier: postgres_sku_tier
   }
 }
 module transactions_identity 'transactions-identity/transactions-identity.module.bicep' = {

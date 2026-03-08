@@ -1,11 +1,14 @@
 @description('The location for the resource(s) to be deployed.')
 param location string = resourceGroup().location
 
-@description('PostgreSQL SKU name. Use Standard_B1ms for dev, Standard_D2s_v3+ for production.')
-param skuName string = 'Standard_B1ms'
+@description('PostgreSQL SKU name. Use Standard_B1ms for dev, Standard_D2ds_v4 for production.')
+param skuName string = 'Standard_D2ds_v4'
 
 @description('PostgreSQL SKU tier. Use Burstable for dev, GeneralPurpose for production.')
-param skuTier string = 'Burstable'
+param skuTier string = 'GeneralPurpose'
+
+@description('Enable PgBouncer connection pooling on port 6432.')
+param pgBouncerEnabled bool = true
 
 @description('Backup retention in days. Minimum 7 (dev), recommended 35 (production).')
 param backupRetentionDays int = 35
@@ -74,7 +77,28 @@ resource consolidation_db 'Microsoft.DBforPostgreSQL/flexibleServers/databases@2
   parent: postgres
 }
 
-output connectionString string = 'Host=${postgres.properties.fullyQualifiedDomainName};Ssl Mode=Require'
+resource pgBouncerEnabled_config 'Microsoft.DBforPostgreSQL/flexibleServers/configurations@2024-08-01' = if (pgBouncerEnabled) {
+  name: 'pgbouncer.enabled'
+  parent: postgres
+  properties: {
+    value: 'true'
+    source: 'user-override'
+  }
+}
+
+resource pgBouncerDefaultPoolSize 'Microsoft.DBforPostgreSQL/flexibleServers/configurations@2024-08-01' = if (pgBouncerEnabled) {
+  name: 'pgbouncer.default_pool_size'
+  parent: postgres
+  properties: {
+    value: '50'
+    source: 'user-override'
+  }
+  dependsOn: [pgBouncerEnabled_config]
+}
+
+output connectionString string = pgBouncerEnabled
+  ? 'Host=${postgres.properties.fullyQualifiedDomainName};Port=6432;Ssl Mode=Require'
+  : 'Host=${postgres.properties.fullyQualifiedDomainName};Ssl Mode=Require'
 
 output name string = postgres.name
 

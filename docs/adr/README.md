@@ -19,6 +19,7 @@ Decisões arquiteturais documentadas para o sistema CashFlow.
 | [ADR-009](009-e2e-testing.md) | Testes E2E com .NET Aspire Testing (DistributedApplicationTestingBuilder) | Aceito |
 | [ADR-010](010-di-handlers.md) | Handlers via DI Direto (sem MediatR/Mediator) | Aceito |
 | [ADR-011](011-container-apps-scaling.md) | Auto-Scaling: HTTP Scaling Rules + Dimensionamento por Perfil de Carga | Aceito |
+| [ADR-012](012-postgresql-scaling.md) | PostgreSQL Scaling: General Purpose SKU + PgBouncer Built-in | Aceito |
 
 ## Formato
 
