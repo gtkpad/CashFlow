@@ -33,6 +33,7 @@ public static class Extensions
         }
 
         builder.ConfigureOpenTelemetry();
+        builder.AddProductionLogFilters();
 
         builder.AddDefaultHealthChecks();
 
@@ -87,10 +88,14 @@ public static class Extensions
                             !context.Request.Path.StartsWithSegments(HealthEndpointPath)
                             && !context.Request.Path.StartsWithSegments(AlivenessEndpointPath)
                     )
-                    // Uncomment the following line to enable gRPC instrumentation (requires the OpenTelemetry.Instrumentation.GrpcNetClient package)
-                    //.AddGrpcClientInstrumentation()
                     .AddHttpClientInstrumentation()
-                    .AddEntityFrameworkCoreInstrumentation();
+                    .AddEntityFrameworkCoreInstrumentation()
+                    .SetSampler(new TraceIdRatioBasedSampler(
+                        double.TryParse(
+                            builder.Configuration["OTEL_TRACES_SAMPLER_ARG"],
+                            out var ratio)
+                            ? ratio
+                            : builder.Environment.IsDevelopment() ? 1.0 : 0.1));
             });
 
         builder.AddOpenTelemetryExporters();
@@ -116,6 +121,19 @@ public static class Extensions
         {
             builder.Services.AddOpenTelemetry()
                .UseAzureMonitor(o => o.ConnectionString = appInsightsConnectionString);
+        }
+
+        return builder;
+    }
+
+    private static TBuilder AddProductionLogFilters<TBuilder>(this TBuilder builder) where TBuilder : IHostApplicationBuilder
+    {
+        if (!builder.Environment.IsDevelopment())
+        {
+            builder.Logging.AddFilter("Microsoft.EntityFrameworkCore", LogLevel.Warning);
+            builder.Logging.AddFilter("Microsoft.AspNetCore.Hosting", LogLevel.Warning);
+            builder.Logging.AddFilter("Microsoft.AspNetCore.Routing", LogLevel.Warning);
+            builder.Logging.AddFilter("System.Net.Http.HttpClient", LogLevel.Warning);
         }
 
         return builder;

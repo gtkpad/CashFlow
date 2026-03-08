@@ -96,6 +96,16 @@ resource pgBouncerDefaultPoolSize 'Microsoft.DBforPostgreSQL/flexibleServers/con
   dependsOn: [pgBouncerEnabled_config]
 }
 
+resource pgBouncerMaxClientConn 'Microsoft.DBforPostgreSQL/flexibleServers/configurations@2024-08-01' = if (pgBouncerEnabled) {
+  name: 'pgbouncer.max_client_conn'
+  parent: postgres
+  properties: {
+    value: '150'
+    source: 'user-override'
+  }
+  dependsOn: [pgBouncerDefaultPoolSize]
+}
+
 output connectionString string = pgBouncerEnabled
   ? 'Host=${postgres.properties.fullyQualifiedDomainName};Port=6432;Ssl Mode=Require'
   : 'Host=${postgres.properties.fullyQualifiedDomainName};Ssl Mode=Require'

@@ -106,6 +106,32 @@ output connectionString string = pgBouncerEnabled
 | **Complexidade** | Routing logic, replication lag | Nenhuma |
 | **Adequação** | > 1,000 req/s leituras | < 100 req/s (caso atual) |
 
+## Diagnóstico Pós-Deploy: Custos e Connection Pooling
+
+### Log Analytics — 93.6% do Custo Total
+
+Após 3 dias em produção com D2ds_v4, o **Log Analytics consumiu R$404 (93.6% do custo total)** por ingestão de 23.3 GB sem daily cap nem sampling:
+
+| Tabela | Volume | % | Causa |
+|--------|--------|---|-------|
+| `ContainerAppConsoleLogs_CL` | 10.2 GB | 44% | Logs verbose de EF Core, ASP.NET, HttpClient |
+| `AppDependencies` | 6.5 GB | 28% | Traces completos com SQL statements por query |
+| `AppTraces` | 6.2 GB | 26% | Traces de cada request × 5 serviços × réplicas |
+
+**Mitigações aplicadas**:
+1. **Daily cap 1 GB** no Log Analytics workspace (`workspaceCapping.dailyQuotaGb: 1`) — custo máximo ~R$510/mês
+2. **Trace sampling 10%** via `TraceIdRatioBasedSampler` — reduz `AppDependencies` ~89%
+3. **Log filters em produção** — EF Core, ASP.NET Hosting/Routing, HttpClient filtrados para `Warning`
+4. **SetDbStatementForText = false** no EF Core instrumentation — reduz payload por dependency entry
+
+Redução estimada: 23.3 GB/3dias → ~5.7 GB/3dias (-75%), custo mensal de R$600-4.000 → ~R$300.
+
+### PgBouncer Connection Exhaustion
+
+75 erros de `remaining connection slots are reserved for SUPERUSER` nas primeiras 24h. Com 5+ réplicas de Container Apps, cada uma mantendo pool Npgsql padrão (~30 conexões), o `max_client_conn=100` (default PgBouncer) era insuficiente.
+
+**Mitigação**: `pgbouncer.max_client_conn = 150`, permitindo 5 réplicas × 30 conexões = 150 conexões de app, multiplexadas pelo PgBouncer em ~50 conexões reais ao PostgreSQL (dentro do `max_connections=196` do D2ds_v4).
+
 ## Consequências
 
 ### Positivas

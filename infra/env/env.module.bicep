@@ -34,6 +34,9 @@ resource env_law 'Microsoft.OperationalInsights/workspaces@2025-02-01' = {
     sku: {
       name: 'PerGB2018'
     }
+    workspaceCapping: {
+      dailyQuotaGb: 1
+    }
   }
   tags: tags
 }
