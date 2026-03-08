@@ -317,6 +317,8 @@ As decisões arquiteturais estão documentadas individualmente em [`adr/README.m
 | [ADR-008](adr/008-gateway-ha.md) | Alta Disponibilidade: Azure Container Apps + .NET Aspire |
 | [ADR-009](adr/009-e2e-testing.md) | Testes E2E com .NET Aspire Testing |
 | [ADR-010](adr/010-di-handlers.md) | Handlers via DI Direto (sem MediatR) |
+| [ADR-011](adr/011-container-apps-scaling.md) | Auto-Scaling: HTTP Scaling Rules + Dimensionamento por Perfil |
+| [ADR-012](adr/012-postgresql-scaling.md) | PostgreSQL Scaling: General Purpose SKU + PgBouncer Built-in |
 
 ---
 
@@ -424,8 +426,8 @@ Consolidation API    ──→ RabbitMQ (consume)    ← Pode cair sem afetar ac
 | Componente | Capacidade Estimada | Margem sobre 50 req/s |
 |---|---|---|
 | Kestrel (endpoint GET, I/O-bound) | ~2.000 req/s | **40x** |
-| Npgsql connection pool (20 conns max, ~30ms/query) | ~660 req/s | **13x** |
-| PostgreSQL read (SELECT por data indexada) | ~5.000 q/s | **100x** |
+| PgBouncer connection pool (porta 6432, pool_size=50) | ~1.600 req/s | **32x** |
+| PostgreSQL read (Standard_D2ds_v4, SELECT por data indexada) | ~5.000 q/s | **100x** |
 
 #### Estratégia de Cache
 
@@ -448,7 +450,7 @@ A implementação usa uma `IOutputCachePolicy` customizada (`DailyBalanceCachePo
 | NFR-4: Consumer MassTransit (2 consumers + particionamento) | ~66 msg/s | ~2 conns concorrentes |
 | **Total combinado** | **~76 ops/s** | **~3 conns concorrentes** |
 
-Capacidade do PostgreSQL single node: ~5.000 ops/s. **Margem: >65x sobre a carga combinada**.
+Capacidade do PostgreSQL Standard_D2ds_v4 (2 vCPUs dedicados, 3.450 IOPS) com PgBouncer (porta 6432, pool_size=50): ~5.000 ops/s. **Margem: >65x sobre a carga combinada**.
 
 ### NFR-3: ≤ 5% de Perda
 

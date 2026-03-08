@@ -1,6 +1,6 @@
 # Plano de Disaster Recovery — CashFlow
 
-> **Última revisão:** 2026-03-06
+> **Última revisão:** 2026-03-08
 > **Responsável:** Gabriel Padilha
 > **Status:** Ativo
 
@@ -197,7 +197,7 @@ az monitor metrics list \
 **Recuperação:**
 
 1. **Storage cheio:** Aumentar storage via Portal ou CLI (`az postgres flexible-server update --storage-size <GB>`). O PostgreSQL para de aceitar escritas quando o storage atinge 100%.
-2. **CPU/Memória:** Escalar o SKU temporariamente (`az postgres flexible-server update --sku-name Standard_D4s_v3`).
+2. **CPU/Memória:** Escalar o SKU temporariamente (`az postgres flexible-server update --sku-name Standard_D4ds_v4`). O SKU atual de produção é `Standard_D2ds_v4` (General Purpose, 2 vCPUs dedicados).
 3. **Falha de zona:** Se HA Zone Redundant estiver habilitado, failover automático ocorre em ~60-120s. Se não, aguardar recovery da plataforma (~5-15 min).
 4. **Servidor irrecuperável:** Executar restore PITR (vide [Runbook 5.2](#52-postgresql--corrupção-de-dados--restore-pitr)).
 
@@ -680,7 +680,7 @@ curl -v https://<gateway-fqdn>/alive
 
 | Gap | Risco | Ação | Prioridade | Status |
 |---|---|---|---|---|
-| SKU `Standard_B1ms` (Burstable) | Throttling sob carga, sem SLA de HA. HA Zone Redundant **requer** GeneralPurpose ou MemoryOptimized | Migrar para `Standard_D2s_v3+` e habilitar `highAvailabilityMode: 'ZoneRedundant'` no Bicep | **P1** | Aberto |
+| ~~SKU `Standard_B1ms` (Burstable)~~ | ~~Throttling sob carga~~ | Migrado para `Standard_D2ds_v4` (General Purpose) + PgBouncer built-in (porta 6432). Ver [ADR-012](adr/012-postgresql-scaling.md) | **P1** | **Resolvido** |
 | `AllowAllAzureIps` firewall rule | Qualquer serviço Azure pode acessar o DB | Private endpoint + VNet injection | **P2** | Aberto |
 | RabbitMQ single-replica em LRS | SPOF na mensageria | Migrar para Azure Service Bus ou ZRS | **P2** | Aberto |
 | ACR Basic (sem geo-replicação) | Image pull falha se região cair | Upgrade para Premium | **P2** | Aberto |
@@ -695,16 +695,16 @@ curl -v https://<gateway-fqdn>/alive
 | `geoRedundantBackup` | `Disabled` | **`Enabled`** (parametrizável) |
 | `autoGrow` | Não configurado | **`Enabled`** |
 
-> **Nota:** `highAvailabilityMode` permanece como `Disabled` por default pois requer SKU GeneralPurpose/MemoryOptimized. Ao migrar para produção com SKU adequado, sobrescrever no `main.bicep` com `highAvailabilityMode: 'ZoneRedundant'`.
+> **Nota:** `highAvailabilityMode` permanece como `Disabled` por default. Com o SKU atual `Standard_D2ds_v4` (General Purpose), é possível habilitar `highAvailabilityMode: 'ZoneRedundant'` no Bicep para HA cross-zone (~$250/mês total). Avaliar custo-benefício conforme criticidade.
 
 ### Aplicação
 
-| Gap | Risco | Ação | Prioridade |
-|---|---|---|---|
-| Sem health check de RabbitMQ | Broker down não detectado por `/health` | Adicionar MassTransit health check | **P1** |
-| Sem `EnableRetryOnFailure` no EF Core | Transient DB errors → HTTP 500 | Configurar retry no Npgsql | **P2** |
-| `activeRevisionsMode: 'Single'` | Deploy sem zero-downtime | Mudar para `Multiple` com traffic splitting | **P2** |
-| Sem scaling rules nos Container Apps | Não escala sob carga | Adicionar HTTP/queue-depth triggers | **P2** |
+| Gap | Risco | Ação | Prioridade | Status |
+|---|---|---|---|---|
+| Sem health check de RabbitMQ | Broker down não detectado por `/health` | Adicionar MassTransit health check | **P1** | Aberto |
+| Sem `EnableRetryOnFailure` no EF Core | Transient DB errors → HTTP 500 | Configurar retry no Npgsql | **P2** | Aberto |
+| `activeRevisionsMode: 'Single'` | Deploy sem zero-downtime | Mudar para `Multiple` com traffic splitting | **P2** | Aberto |
+| ~~Sem scaling rules nos Container Apps~~ | ~~Não escala sob carga~~ | HTTP scaling rules configuradas por perfil de serviço. Ver [ADR-011](adr/011-container-apps-scaling.md) | **P2** | **Resolvido** |
 
 ### Operacional
 
