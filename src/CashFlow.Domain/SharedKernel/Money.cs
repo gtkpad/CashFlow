@@ -13,6 +13,9 @@ public sealed record Money : IValueObject
     /// </summary>
     public Money(decimal amount, string currency = "BRL")
     {
+        if (amount < 0)
+            throw new ArgumentOutOfRangeException(nameof(amount), amount, "Amount cannot be negative.");
+
         if (string.IsNullOrWhiteSpace(currency) || currency.Length != 3)
             throw new ArgumentException("Currency must be a 3-letter ISO 4217 code.", nameof(currency));
 

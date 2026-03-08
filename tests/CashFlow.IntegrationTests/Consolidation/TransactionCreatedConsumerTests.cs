@@ -126,7 +126,7 @@ public class TransactionCreatedConsumerTests : IAsyncLifetime
         summary!.TransactionCount.Should().Be(2);
         summary.TotalCredits.Amount.Should().Be(200.00m);
         summary.TotalDebits.Amount.Should().Be(50.00m);
-        summary.Balance.Amount.Should().Be(150.00m);
+        summary.Balance.Should().Be(150.00m);
     }
 
     [Fact]

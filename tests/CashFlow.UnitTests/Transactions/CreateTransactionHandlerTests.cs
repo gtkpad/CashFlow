@@ -3,9 +3,7 @@ using CashFlow.Domain.SharedKernel;
 using CashFlow.Domain.Transactions;
 using CashFlow.ServiceDefaults;
 using CashFlow.Transactions.API.Features.CreateTransaction;
-using CashFlow.Transactions.API.Persistence;
 using FluentAssertions;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
@@ -15,24 +13,20 @@ namespace CashFlow.UnitTests.Transactions;
 public class CreateTransactionHandlerTests
 {
     private readonly ITransactionRepository _repository;
-    private readonly TransactionsDbContext _dbContext;
+    private readonly IUnitOfWork _unitOfWork;
     private readonly CreateTransactionHandler _handler;
 
     public CreateTransactionHandlerTests()
     {
         _repository = Substitute.For<ITransactionRepository>();
-
-        var options = new DbContextOptionsBuilder<TransactionsDbContext>()
-            .UseInMemoryDatabase(Guid.NewGuid().ToString())
-            .Options;
-        _dbContext = new TransactionsDbContext(options);
+        _unitOfWork = Substitute.For<IUnitOfWork>();
 
         var meterFactory = new ServiceCollection()
             .AddMetrics()
             .BuildServiceProvider()
             .GetRequiredService<IMeterFactory>();
 
-        _handler = new CreateTransactionHandler(_repository, _dbContext,
+        _handler = new CreateTransactionHandler(_repository, _unitOfWork,
             Substitute.For<ILogger<CreateTransactionHandler>>(),
             new CashFlowMetrics(meterFactory));
     }

@@ -34,6 +34,13 @@ builder.Services.AddMassTransit(x =>
         o.DuplicateDetectionWindow = TimeSpan.FromMinutes(30);
     });
 
+    x.ConfigureHealthCheckOptions(options =>
+    {
+        options.Name = "rabbitmq";
+        options.MinimalFailureStatus = Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus.Unhealthy;
+        options.Tags.Add("ready");
+    });
+
     x.UsingRabbitMq((context, cfg) =>
     {
         cfg.Host(builder.Configuration.GetConnectionString("messaging"));
@@ -49,8 +56,16 @@ builder.Services.AddCarter(configurator: c =>
 builder.Services.AddValidatorsFromAssemblyContaining<CreateTransactionValidator>();
 builder.Services.AddScoped<DomainEventInterceptor>();
 builder.Services.AddScoped<ITransactionRepository, TransactionRepository>();
+builder.Services.AddScoped<CashFlow.Domain.SharedKernel.IUnitOfWork>(sp =>
+    sp.GetRequiredService<TransactionsDbContext>());
 builder.Services.AddScoped<CreateTransactionHandler>();
 builder.Services.AddScoped<GetTransactionHandler>();
+builder.Services.AddApiVersioning(options =>
+{
+    options.DefaultApiVersion = new Asp.Versioning.ApiVersion(1, 0);
+    options.AssumeDefaultVersionWhenUnspecified = true;
+    options.ReportApiVersions = true;
+});
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
@@ -67,8 +82,7 @@ using (var scope = app.Services.CreateScope())
 
 app.MapDefaultEndpoints();
 app.UseGlobalExceptionHandling();
-if (app.Environment.IsDevelopment())
-    app.MapOpenApi();
+app.MapOpenApi();
 app.UseMiddleware<CashFlow.ServiceDefaults.GatewaySecretMiddleware>();
 
 var v1 = app.MapGroup("api/v1");

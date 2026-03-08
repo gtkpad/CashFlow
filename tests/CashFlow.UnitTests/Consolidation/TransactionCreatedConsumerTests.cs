@@ -86,7 +86,7 @@ public class TransactionCreatedConsumerTests : IDisposable
         var summary = await _db.DailySummaries
             .FirstOrDefaultAsync(d => d.MerchantId == new MerchantId(merchantId) && d.Date == date);
         summary.Should().NotBeNull();
-        summary!.Balance.Amount.Should().Be(150m);
+        summary!.Balance.Should().Be(150m);
         summary.TransactionCount.Should().Be(2);
     }
 

@@ -200,6 +200,83 @@ public class TransactionFlowTests(CashFlowAppFixture fixture)
         getResponse.StatusCode.Should().Be(HttpStatusCode.OK);
     }
 
+    /// <summary>
+    /// Verifies multi-tenant isolation: Merchant A should not see
+    /// data from Merchant B in the consolidated daily balance.
+    /// </summary>
+    [Fact]
+    public async Task MerchantA_ShouldNotSeeDataFromMerchantB()
+    {
+        // Arrange — create two separate merchant identities
+        var clientA = fixture.App.CreateHttpClient("gateway");
+        var authA = await AuthHelper.RegisterAndLoginAsync(clientA);
+        clientA.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", authA.AccessToken);
+
+        var clientB = fixture.App.CreateHttpClient("gateway");
+        var authB = await AuthHelper.RegisterAndLoginAsync(clientB);
+        clientB.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", authB.AccessToken);
+
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+
+        // Act — Merchant A creates a credit of 500
+        var responseA = await clientA.PostAsJsonAsync("/api/v1/transactions", new
+        {
+            referenceDate = today,
+            type = 1, // Credit
+            amount = 500.00m,
+            currency = "BRL",
+            description = "Merchant A credit"
+        });
+        responseA.StatusCode.Should().Be(HttpStatusCode.Created,
+            await GetResponseBody(responseA));
+
+        // Merchant B creates a credit of 999
+        var responseB = await clientB.PostAsJsonAsync("/api/v1/transactions", new
+        {
+            referenceDate = today,
+            type = 1, // Credit
+            amount = 999.00m,
+            currency = "BRL",
+            description = "Merchant B credit"
+        });
+        responseB.StatusCode.Should().Be(HttpStatusCode.Created,
+            await GetResponseBody(responseB));
+
+        // Wait for Merchant A's consolidation
+        var balanceA = await EventualConsistencyHelper.WaitForConditionAsync(
+            action: async () =>
+            {
+                var resp = await clientA.GetAsync($"/api/v1/consolidation/{today:yyyy-MM-dd}");
+                if (!resp.IsSuccessStatusCode)
+                    return null;
+                return await resp.Content.ReadFromJsonAsync<DailyBalanceResponse>(JsonOptions);
+            },
+            predicate: b => b is not null && b.TransactionCount >= 1);
+
+        // Assert — Merchant A should only see their own 500, not B's 999
+        balanceA.Should().NotBeNull();
+        balanceA!.TotalCredits.Should().Be(500.00m);
+        balanceA.Balance.Should().Be(500.00m);
+
+        // Wait for Merchant B's consolidation
+        var balanceB = await EventualConsistencyHelper.WaitForConditionAsync(
+            action: async () =>
+            {
+                var resp = await clientB.GetAsync($"/api/v1/consolidation/{today:yyyy-MM-dd}");
+                if (!resp.IsSuccessStatusCode)
+                    return null;
+                return await resp.Content.ReadFromJsonAsync<DailyBalanceResponse>(JsonOptions);
+            },
+            predicate: b => b is not null && b.TransactionCount >= 1);
+
+        // Assert — Merchant B should only see their own 999, not A's 500
+        balanceB.Should().NotBeNull();
+        balanceB!.TotalCredits.Should().Be(999.00m);
+        balanceB.Balance.Should().Be(999.00m);
+    }
+
     private static async Task<string> GetResponseBody(HttpResponseMessage response)
     {
         try

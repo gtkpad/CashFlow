@@ -18,7 +18,7 @@ public class DailySummaryTests
         summary.Date.Should().Be(_today);
         summary.TotalCredits.Amount.Should().Be(0m);
         summary.TotalDebits.Amount.Should().Be(0m);
-        summary.Balance.Amount.Should().Be(0m);
+        summary.Balance.Should().Be(0m);
         summary.TransactionCount.Should().Be(0);
     }
 
@@ -31,7 +31,7 @@ public class DailySummaryTests
 
         summary.TotalCredits.Amount.Should().Be(100m);
         summary.TotalDebits.Amount.Should().Be(0m);
-        summary.Balance.Amount.Should().Be(100m);
+        summary.Balance.Should().Be(100m);
         summary.TransactionCount.Should().Be(1);
     }
 
@@ -44,7 +44,7 @@ public class DailySummaryTests
 
         summary.TotalCredits.Amount.Should().Be(0m);
         summary.TotalDebits.Amount.Should().Be(50m);
-        summary.Balance.Amount.Should().Be(-50m);
+        summary.Balance.Should().Be(-50m);
         summary.TransactionCount.Should().Be(1);
     }
 
@@ -59,7 +59,7 @@ public class DailySummaryTests
 
         summary.TotalCredits.Amount.Should().Be(250m);
         summary.TotalDebits.Amount.Should().Be(80m);
-        summary.Balance.Amount.Should().Be(170m);
+        summary.Balance.Should().Be(170m);
         summary.TransactionCount.Should().Be(3);
     }
 
@@ -81,8 +81,20 @@ public class DailySummaryTests
 
         var act = () => summary.ApplyTransaction(TransactionType.Credit, new Money(-10m));
 
-        act.Should().Throw<ArgumentException>()
-            .WithMessage("*positive*");
+        act.Should().Throw<ArgumentOutOfRangeException>()
+            .WithMessage("*negative*");
+    }
+
+    [Fact]
+    public void ApplyTransaction_DifferentCurrency_ShouldThrow()
+    {
+        var summary = DailySummary.CreateForDay(_merchantId, _today);
+        summary.ApplyTransaction(TransactionType.Credit, new Money(100m, "BRL"));
+
+        var act = () => summary.ApplyTransaction(TransactionType.Credit, new Money(50m, "USD"));
+
+        act.Should().Throw<InvalidOperationException>()
+            .WithMessage("*different currencies*");
     }
 
     [Fact]

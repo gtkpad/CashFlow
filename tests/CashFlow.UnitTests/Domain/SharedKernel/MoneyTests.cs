@@ -50,4 +50,21 @@ public class MoneyTests
         act.Should().Throw<InvalidOperationException>()
             .WithMessage("*different currencies*");
     }
+
+    [Fact]
+    public void Constructor_NegativeAmount_ShouldThrow()
+    {
+        var act = () => new Money(-1m);
+
+        act.Should().Throw<ArgumentOutOfRangeException>()
+            .WithMessage("*negative*");
+    }
+
+    [Fact]
+    public void Constructor_LowercaseCurrency_ShouldNormalize()
+    {
+        var money = new Money(10m, "usd");
+
+        money.Currency.Should().Be("USD");
+    }
 }

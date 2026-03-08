@@ -20,6 +20,10 @@ Decisões arquiteturais documentadas para o sistema CashFlow.
 | [ADR-010](010-di-handlers.md) | Handlers via DI Direto (sem MediatR/Mediator) | Aceito |
 | [ADR-011](011-container-apps-scaling.md) | Auto-Scaling: HTTP Scaling Rules + Dimensionamento por Perfil de Carga | Aceito |
 | [ADR-012](012-postgresql-scaling.md) | PostgreSQL Scaling: General Purpose SKU + PgBouncer Built-in | Aceito |
+| [ADR-013](013-query-side-no-repository.md) | Query-Side com DbContext Direto (sem Repository) — CQRS | Aceito |
+| [ADR-014](014-resource-authorization.md) | Autorização Baseada em Recurso via MerchantId (Tenant Isolation) | Aceito |
+| [ADR-015](015-data-security.md) | Segurança de Dados: Encryption at Rest/Transit + Networking Roadmap | Aceito |
+| [ADR-016](016-api-versioning.md) | API Versioning com Asp.Versioning + Política de Deprecation | Aceito |
 
 ## Formato
 

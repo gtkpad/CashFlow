@@ -54,7 +54,7 @@ public sealed class TransactionCreatedConsumer(
 
         logger.LogInformation(
             "Consolidated successfully: MerchantId={MerchantId}, Date={Date}, Balance={Balance}",
-            evt.MerchantId, evt.ReferenceDate, summary.Balance.Amount);
+            evt.MerchantId, evt.ReferenceDate, summary.Balance);
     }
 }
 

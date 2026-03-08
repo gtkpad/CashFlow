@@ -13,6 +13,7 @@
     <PackageReference Include="MassTransit" />
     <PackageReference Include="MassTransit.EntityFrameworkCore" />
     <PackageReference Include="MassTransit.RabbitMQ" />
+    <PackageReference Include="Asp.Versioning.Http" />
     <PackageReference Include="Carter" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
     <PackageReference Include="FluentValidation" />

@@ -1,3 +1,4 @@
+using CashFlow.Domain.SharedKernel;
 using CashFlow.Domain.Transactions;
 using MassTransit;
 using Microsoft.EntityFrameworkCore;
@@ -5,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 namespace CashFlow.Transactions.API.Persistence;
 
 public sealed class TransactionsDbContext(DbContextOptions<TransactionsDbContext> options)
-    : DbContext(options)
+    : DbContext(options), IUnitOfWork
 {
     public DbSet<Transaction> Transactions => Set<Transaction>();
 

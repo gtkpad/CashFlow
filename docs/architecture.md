@@ -626,17 +626,26 @@ Os testes NetArchTest impõem: (1) Features não referenciam outras Features, (2
 
 O sistema utiliza autenticação JWT centralizada no Gateway com header-based tenant isolation (`X-User-Id` + `MerchantIdFilter`). A `DefaultPolicy` requer autenticação para todas as rotas (exceto paths públicos gerenciados pelo `AuthMiddleware`).
 
-### Limitação
+### Isolamento de Recursos (Resource-Based Authorization)
 
-Não há role-based access control (RBAC) nem policies granulares. Qualquer usuário autenticado pode acessar qualquer endpoint protegido (desde que forneça seu `MerchantId`). O isolamento de dados é garantido pelo `MerchantIdFilter`, mas não há distinção de papéis.
+O sistema implementa **autorização baseada em recurso** via `MerchantId` em 3 camadas:
 
-### Direções Possíveis
+1. **Gateway (`AuthMiddleware`)** — extrai `sub` do JWT → injeta `X-User-Id` header (previne spoofing)
+2. **Serviço (`GatewaySecretMiddleware`)** — valida que o request veio do Gateway (defense-in-depth)
+3. **Endpoint (`MerchantIdFilter`)** — converte `X-User-Id` em `MerchantId` para filtragem obrigatória
+
+Todos os handlers filtram por `MerchantId`: queries incluem `WHERE MerchantId = @mId`, o cache varia por `X-User-Id`, e o teste E2E `MerchantA_ShouldNotSeeDataFromMerchantB` valida o isolamento end-to-end.
+
+> **Decisão documentada:** [ADR-014 — Autorização Baseada em Recurso via MerchantId](adr/014-resource-authorization.md)
+
+### Limitação: Sem RBAC
+
+Não há role-based access control (RBAC) nem distinção de papéis. Qualquer usuário autenticado acessa todos os endpoints protegidos (filtrado ao seu próprio `MerchantId`). O isolamento de **dados** é completo; o que falta é isolamento de **funcionalidades** por papel.
 
 | Prioridade | Evolução | Benefício |
 |---|---|---|
 | Alta | Adicionar roles (`Admin`, `Merchant`, `ReadOnly`) via ASP.NET Core Identity Roles | Segregação de acesso por papel |
-| Média | Policies resource-based (`MerchantOwner`) | Validação de ownership no Gateway |
-| Baixa | Claims-based authorization para features específicas | Feature flags por claim |
+| Média | Claims-based authorization para features específicas | Feature flags por claim |
 
 ---
 

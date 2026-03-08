@@ -7,18 +7,21 @@ namespace CashFlow.Transactions.API.Persistence;
 
 public static class DomainEventMapper
 {
-    public static async Task PublishIntegrationEvent(
+    private static readonly Dictionary<Type, Func<IDomainEvent, IPublishEndpoint, CancellationToken, Task>>
+        Publishers = new()
+        {
+            [typeof(TransactionCreated)] = (e, pub, ct) =>
+                pub.Publish<ITransactionCreated>(MapTransactionCreated((TransactionCreated)e), ct)
+        };
+
+    public static Task PublishIntegrationEvent(
         IDomainEvent domainEvent,
         IPublishEndpoint publishEndpoint,
         CancellationToken cancellationToken)
     {
-        switch (domainEvent)
-        {
-            case TransactionCreated e:
-                await publishEndpoint.Publish<ITransactionCreated>(
-                    MapTransactionCreated(e), cancellationToken);
-                break;
-        }
+        return Publishers.TryGetValue(domainEvent.GetType(), out var publisher)
+            ? publisher(domainEvent, publishEndpoint, cancellationToken)
+            : Task.CompletedTask;
     }
 
     private record TransactionCreatedEvent(

@@ -64,6 +64,14 @@
         "resolved": "3.1.4",
         "contentHash": "5mj99LvCqrq3CNi06xYdyIAXOEh+5b33F2nErCzI5zWiDdLHXiPXEWFSUAF8zlIv0ZWqjZNCwHTQeAPYbF3pCg=="
       },
+      "Asp.Versioning.Abstractions": {
+        "type": "Transitive",
+        "resolved": "8.1.0",
+        "contentHash": "mpeNZyMdvrHztJwR1sXIUQ+3iioEU97YMBnFA9WLbsPOYhGwDJnqJMmEd8ny7kcmS9OjTHoEuX/bSXXY3brIFA==",
+        "dependencies": {
+          "Microsoft.Extensions.Primitives": "8.0.0"
+        }
+      },
       "AspNetCore.HealthChecks.Rabbitmq": {
         "type": "Transitive",
         "resolved": "9.0.0",
@@ -820,6 +828,7 @@
       "cashflow.consolidation.api": {
         "type": "Project",
         "dependencies": {
+          "Asp.Versioning.Http": "[8.1.1, )",
           "Aspire.Azure.Npgsql.EntityFrameworkCore.PostgreSQL": "[13.1.2, )",
           "Aspire.RabbitMQ.Client": "[13.1.2, )",
           "Carter": "[10.0.0, )",
@@ -874,6 +883,7 @@
       "cashflow.transactions.api": {
         "type": "Project",
         "dependencies": {
+          "Asp.Versioning.Http": "[8.1.1, )",
           "Aspire.Azure.Npgsql.EntityFrameworkCore.PostgreSQL": "[13.1.2, )",
           "Aspire.RabbitMQ.Client": "[13.1.2, )",
           "Carter": "[10.0.0, )",
@@ -888,6 +898,15 @@
           "Microsoft.EntityFrameworkCore": "[10.0.3, )",
           "Microsoft.EntityFrameworkCore.Relational": "[10.0.3, )",
           "Npgsql.EntityFrameworkCore.PostgreSQL": "[10.0.0, )"
+        }
+      },
+      "Asp.Versioning.Http": {
+        "type": "CentralTransitive",
+        "requested": "[8.1.1, )",
+        "resolved": "8.1.1",
+        "contentHash": "1D/Mzq1MSUSQe1eCY6GeEsu+tIlpzoWZxZkhlcw/uvtVoTrwO+BMl0fSj/XX8oZN1DutWTZqHDHgyDRq+IeSdQ==",
+        "dependencies": {
+          "Asp.Versioning.Abstractions": "8.1.0"
         }
       },
       "Aspire.Azure.Npgsql.EntityFrameworkCore.PostgreSQL": {

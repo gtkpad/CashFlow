@@ -8,7 +8,7 @@ public sealed class DailySummary : Entity<DailySummaryId>, IAggregateRoot
     public DateOnly Date { get; private init; }
     public Money TotalCredits { get; private set; } = Money.Zero;
     public Money TotalDebits { get; private set; } = Money.Zero;
-    public Money Balance => TotalCredits - TotalDebits;
+    public decimal Balance => TotalCredits.Amount - TotalDebits.Amount;
     public int TransactionCount { get; private set; }
     public DateTimeOffset UpdatedAt { get; private set; }
 

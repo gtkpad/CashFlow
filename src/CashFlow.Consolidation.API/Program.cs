@@ -29,6 +29,13 @@ builder.Services.AddMassTransit(x =>
         o.UsePostgres();
     });
 
+    x.ConfigureHealthCheckOptions(options =>
+    {
+        options.Name = "rabbitmq";
+        options.MinimalFailureStatus = Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus.Unhealthy;
+        options.Tags.Add("ready");
+    });
+
     x.UsingRabbitMq((context, cfg) =>
     {
         cfg.Host(builder.Configuration.GetConnectionString("messaging"));
@@ -47,6 +54,12 @@ builder.Services.AddOutputCache(options =>
 });
 builder.Services.AddScoped<IDailySummaryRepository, DailySummaryRepository>();
 builder.Services.AddScoped<GetDailyBalanceHandler>();
+builder.Services.AddApiVersioning(options =>
+{
+    options.DefaultApiVersion = new Asp.Versioning.ApiVersion(1, 0);
+    options.AssumeDefaultVersionWhenUnspecified = true;
+    options.ReportApiVersions = true;
+});
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
@@ -61,8 +74,7 @@ using (var scope = app.Services.CreateScope())
 
 app.MapDefaultEndpoints();
 app.UseGlobalExceptionHandling();
-if (app.Environment.IsDevelopment())
-    app.MapOpenApi();
+app.MapOpenApi();
 app.UseMiddleware<CashFlow.ServiceDefaults.GatewaySecretMiddleware>();
 app.UseOutputCache();
 

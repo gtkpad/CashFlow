@@ -137,7 +137,7 @@ graph LR
 | `/health` | Readiness | Todos os checks registrados (DB connectivity via `SELECT 1`) |
 | `/alive` | Liveness | Apenas self-check (processo vivo) |
 
-**Gap conhecido:** Nenhum health check verifica conectividade com RabbitMQ. O broker pode estar down e `/health` ainda retorna Healthy.
+**Resolvido:** Health check de RabbitMQ configurado via MassTransit `ConfigureHealthCheckOptions` com `MinimalFailureStatus = Unhealthy` e tag `ready`. O `/health` agora retorna Unhealthy quando o broker está indisponível.
 
 ### 4.4 YARP Gateway Health Monitoring
 
@@ -701,7 +701,7 @@ curl -v https://<gateway-fqdn>/alive
 
 | Gap | Risco | Ação | Prioridade | Status |
 |---|---|---|---|---|
-| Sem health check de RabbitMQ | Broker down não detectado por `/health` | Adicionar MassTransit health check | **P1** | Aberto |
+| ~~Sem health check de RabbitMQ~~ | ~~Broker down não detectado por `/health`~~ | MassTransit `ConfigureHealthCheckOptions` com `MinimalFailureStatus = Unhealthy` | **P1** | **Resolvido** |
 | Sem `EnableRetryOnFailure` no EF Core | Transient DB errors → HTTP 500 | Configurar retry no Npgsql | **P2** | Aberto |
 | `activeRevisionsMode: 'Single'` | Deploy sem zero-downtime | Mudar para `Multiple` com traffic splitting | **P2** | Aberto |
 | ~~Sem scaling rules nos Container Apps~~ | ~~Não escala sob carga~~ | HTTP scaling rules configuradas por perfil de serviço. Ver [ADR-011](adr/011-container-apps-scaling.md) | **P2** | **Resolvido** |

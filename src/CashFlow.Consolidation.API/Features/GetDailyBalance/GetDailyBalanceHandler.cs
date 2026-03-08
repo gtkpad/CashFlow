@@ -24,6 +24,6 @@ public sealed class GetDailyBalanceHandler(ConsolidationDbContext db)
 
         return new GetDailyBalanceResponse(
             summary.Date, summary.TotalCredits.Amount, summary.TotalDebits.Amount,
-            summary.Balance.Amount, summary.TransactionCount);
+            summary.Balance, summary.TransactionCount);
     }
 }

@@ -55,14 +55,14 @@ public class TransactionTests
     }
 
     [Fact]
-    public void Create_NegativeValue_ShouldFail()
+    public void Create_NegativeValue_ShouldThrowAtMoneyConstruction()
     {
-        var result = Transaction.Create(
+        var act = () => Transaction.Create(
             _merchantId, DateOnly.FromDateTime(DateTime.Today),
             TransactionType.Debit, new Money(-50m), "Expense", "user");
 
-        result.IsSuccess.Should().BeFalse();
-        result.Error.Should().Contain("Value");
+        act.Should().Throw<ArgumentOutOfRangeException>()
+            .WithMessage("*negative*");
     }
 
     [Fact]

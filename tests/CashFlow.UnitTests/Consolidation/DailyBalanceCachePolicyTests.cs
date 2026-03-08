@@ -100,4 +100,24 @@ public class DailyBalanceCachePolicyTests
 
         context.Tags.Should().BeEmpty();
     }
+
+    [Fact]
+    public async Task ServeFromCacheAsync_ShouldCompleteSuccessfully()
+    {
+        var context = CreateContext(date: "2025-01-01");
+
+        await _policy.ServeFromCacheAsync(context, CancellationToken.None);
+
+        context.AllowCacheStorage.Should().BeFalse("no-op should not modify context");
+    }
+
+    [Fact]
+    public async Task ServeResponseAsync_ShouldCompleteSuccessfully()
+    {
+        var context = CreateContext(date: "2025-01-01");
+
+        await _policy.ServeResponseAsync(context, CancellationToken.None);
+
+        context.AllowCacheStorage.Should().BeFalse("no-op should not modify context");
+    }
 }
