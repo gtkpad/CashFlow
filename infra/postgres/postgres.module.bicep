@@ -16,8 +16,8 @@ param backupRetentionDays int = 35
 @description('Enable geo-redundant backup for cross-region disaster recovery.')
 param geoRedundantBackup string = 'Enabled'
 
-@description('High availability mode. Disabled for dev/Burstable, ZoneRedundant for production with GeneralPurpose/MemoryOptimized tier.')
-param highAvailabilityMode string = 'Disabled'
+@description('High availability mode. ZoneRedundant for production (requires GeneralPurpose/MemoryOptimized tier). Pass Disabled explicitly for dev environments with Burstable SKU.')
+param highAvailabilityMode string = 'ZoneRedundant'
 
 @description('Storage size in GB. Minimum 32 for dev.')
 param storageSizeGB int = 32

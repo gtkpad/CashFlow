@@ -13,6 +13,10 @@ param jwt_signing_key string
 @description('The RabbitMQ password for messaging.')
 param messaging_password string
 
+@secure()
+@description('The RabbitMQ username for messaging.')
+param messaging_username string
+
 @description('The principal ID of the managed identity that will read secrets.')
 param secrets_identity_principal_id string
 
@@ -55,11 +59,19 @@ resource messaging_password_entry 'Microsoft.KeyVault/vaults/secrets@2023-07-01'
   }
 }
 
+resource messaging_username_entry 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
+  parent: vault
+  name: 'messaging-username'
+  properties: {
+    value: messaging_username
+  }
+}
+
 resource messaging_uri_entry 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
   parent: vault
   name: 'messaging-uri'
   properties: {
-    value: 'amqp://guest:${uriComponent(messaging_password)}@messaging:5672'
+    value: 'amqp://${uriComponent(messaging_username)}:${uriComponent(messaging_password)}@messaging:5672'
   }
 }
 

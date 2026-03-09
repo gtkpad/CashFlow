@@ -24,6 +24,9 @@ param jwt_signing_key string
 @secure()
 param messaging_password string
 
+@secure()
+param messaging_username string
+
 @description('PostgreSQL SKU name.')
 param postgres_sku_name string = 'Standard_D2ds_v4'
 
@@ -57,6 +60,7 @@ module keyvault 'keyvault/keyvault.module.bicep' = {
     gateway_secret: gateway_secret
     jwt_signing_key: jwt_signing_key
     messaging_password: messaging_password
+    messaging_username: messaging_username
     secrets_identity_principal_id: secrets_identity.outputs.principalId
   }
 }

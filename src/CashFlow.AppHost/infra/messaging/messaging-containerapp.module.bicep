@@ -22,6 +22,11 @@ resource messaging 'Microsoft.App/containerApps@2025-01-01' = {
           keyVaultUrl: '${keyvault_uri}secrets/messaging-password'
           identity: secrets_identity_id
         }
+        {
+          name: 'rabbitmq-default-user'
+          keyVaultUrl: '${keyvault_uri}secrets/messaging-username'
+          identity: secrets_identity_id
+        }
       ]
       activeRevisionsMode: 'Single'
       ingress: {
@@ -45,7 +50,7 @@ resource messaging 'Microsoft.App/containerApps@2025-01-01' = {
           env: [
             {
               name: 'RABBITMQ_DEFAULT_USER'
-              value: 'guest'
+              secretRef: 'rabbitmq-default-user'
             }
             {
               name: 'RABBITMQ_DEFAULT_PASS'

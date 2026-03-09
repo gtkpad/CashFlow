@@ -57,6 +57,11 @@ resource transactions 'Microsoft.App/containerApps@2025-02-02-preview' = {
           keyVaultUrl: '${keyvault_uri}secrets/gateway-secret'
           identity: secrets_identity_id
         }
+        {
+          name: 'messaging-username'
+          keyVaultUrl: '${keyvault_uri}secrets/messaging-username'
+          identity: secrets_identity_id
+        }
       ]
       activeRevisionsMode: 'Single'
       ingress: {
@@ -141,7 +146,7 @@ resource transactions 'Microsoft.App/containerApps@2025-02-02-preview' = {
             }
             {
               name: 'MESSAGING_USERNAME'
-              value: 'guest'
+              secretRef: 'messaging-username'
             }
             {
               name: 'MESSAGING_PASSWORD'
