@@ -2,7 +2,7 @@ using FluentValidation;
 
 namespace CashFlow.Transactions.API.Features.CreateTransaction;
 
-public class CreateTransactionValidator : AbstractValidator<CreateTransactionCommand>
+public sealed class CreateTransactionValidator : AbstractValidator<CreateTransactionCommand>
 {
     public CreateTransactionValidator()
     {

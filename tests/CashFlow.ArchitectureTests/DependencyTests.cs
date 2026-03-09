@@ -140,4 +140,42 @@ public class DependencyTests
 
         result.IsSuccessful.Should().BeTrue();
     }
+
+    [Fact]
+    public void ServiceDefaults_ShouldNotDependOn_AnyApiAssembly()
+    {
+        var assembly = typeof(CashFlow.ServiceDefaults.GlobalExceptionHandler).Assembly;
+        foreach (var ns in new[] { "CashFlow.Transactions.API", "CashFlow.Consolidation.API",
+                                    "CashFlow.Identity.API", "CashFlow.Gateway" })
+        {
+            Types.InAssembly(assembly).ShouldNot().HaveDependencyOn(ns).GetResult()
+                .IsSuccessful.Should().BeTrue(because: $"ServiceDefaults must not depend on {ns}");
+        }
+    }
+
+    [Fact]
+    public void Validators_ShouldHaveValidatorSuffix()
+    {
+        var assembly = typeof(CashFlow.Transactions.API.Persistence.TransactionsDbContext).Assembly;
+        Types.InAssembly(assembly)
+            .That().HaveNameEndingWith("Validator")
+            .Should().ResideInNamespaceContaining("Features")
+            .GetResult().IsSuccessful.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Handlers_ShouldResideInFeaturesNamespace()
+    {
+        foreach (var assembly in new[]
+        {
+            typeof(CashFlow.Transactions.API.Persistence.TransactionsDbContext).Assembly,
+            typeof(CashFlow.Consolidation.API.Persistence.ConsolidationDbContext).Assembly
+        })
+        {
+            Types.InAssembly(assembly)
+                .That().HaveNameEndingWith("Handler")
+                .Should().ResideInNamespaceContaining("Features")
+                .GetResult().IsSuccessful.Should().BeTrue();
+        }
+    }
 }

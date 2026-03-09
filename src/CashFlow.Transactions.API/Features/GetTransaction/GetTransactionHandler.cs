@@ -10,7 +10,7 @@ public record GetTransactionResponse(
     decimal Amount, string Currency, string Description,
     DateTimeOffset CreatedAt, string? CreatedBy);
 
-public class GetTransactionHandler(TransactionsDbContext db)
+public sealed class GetTransactionHandler(TransactionsDbContext db)
 {
     public async Task<GetTransactionResponse?> HandleAsync(
         Guid merchantId, Guid transactionId, CancellationToken ct = default)

@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace CashFlow.Transactions.API.Persistence.Configurations;
 
-public class TransactionConfiguration : IEntityTypeConfiguration<Transaction>
+public sealed class TransactionConfiguration : IEntityTypeConfiguration<Transaction>
 {
     public void Configure(EntityTypeBuilder<Transaction> builder)
     {

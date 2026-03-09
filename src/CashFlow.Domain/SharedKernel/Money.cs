@@ -27,7 +27,6 @@ public sealed record Money : IValueObject
 
     public bool IsPositive() => Amount > 0;
     public bool IsZero() => Amount == 0;
-    public bool IsNegative() => Amount < 0;
 
     public static Money operator +(Money a, Money b)
     {

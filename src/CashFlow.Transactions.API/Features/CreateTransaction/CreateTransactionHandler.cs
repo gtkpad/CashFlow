@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging;
 
 namespace CashFlow.Transactions.API.Features.CreateTransaction;
 
-public class CreateTransactionHandler(
+public sealed class CreateTransactionHandler(
     ITransactionRepository repository,
     IUnitOfWork unitOfWork,
     ILogger<CreateTransactionHandler> logger,

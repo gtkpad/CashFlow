@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace CashFlow.Consolidation.API.Persistence.Configurations;
 
-public class DailySummaryConfiguration : IEntityTypeConfiguration<DailySummary>
+public sealed class DailySummaryConfiguration : IEntityTypeConfiguration<DailySummary>
 {
     public void Configure(EntityTypeBuilder<DailySummary> builder)
     {
