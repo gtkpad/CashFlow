@@ -13,15 +13,18 @@ namespace CashFlow.UnitTests.Transactions;
 public class DomainEventInterceptorTests
 {
     private readonly IPublishEndpoint _publishEndpoint;
+    private readonly IServiceProvider _serviceProvider;
 
     public DomainEventInterceptorTests()
     {
         _publishEndpoint = Substitute.For<IPublishEndpoint>();
+        _serviceProvider = Substitute.For<IServiceProvider>();
+        _serviceProvider.GetService(typeof(IPublishEndpoint)).Returns(_publishEndpoint);
     }
 
     private TransactionsDbContext CreateContext()
     {
-        var interceptor = new DomainEventInterceptor(_publishEndpoint);
+        var interceptor = new DomainEventInterceptor(_serviceProvider);
         var options = new DbContextOptionsBuilder<TransactionsDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .AddInterceptors(interceptor)

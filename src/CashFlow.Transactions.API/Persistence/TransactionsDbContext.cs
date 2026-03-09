@@ -5,10 +5,18 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CashFlow.Transactions.API.Persistence;
 
-public sealed class TransactionsDbContext(DbContextOptions<TransactionsDbContext> options)
+public sealed class TransactionsDbContext(
+    DbContextOptions<TransactionsDbContext> options,
+    DomainEventInterceptor? domainEventInterceptor = null)
     : DbContext(options), IUnitOfWork
 {
     public DbSet<Transaction> Transactions => Set<Transaction>();
+
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        if (domainEventInterceptor is not null)
+            optionsBuilder.AddInterceptors(domainEventInterceptor);
+    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

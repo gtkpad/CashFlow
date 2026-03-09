@@ -12,15 +12,10 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
 
-builder.Services.AddDbContext<TransactionsDbContext>((sp, options) =>
-{
+builder.Services.AddDbContext<TransactionsDbContext>(options =>
     options.UseNpgsql(
         builder.Configuration.GetConnectionString("transactions-db"),
-        npgsqlOptions => npgsqlOptions.EnableRetryOnFailure(maxRetryCount: 3));
-    options.AddInterceptors(sp.GetRequiredService<DomainEventInterceptor>());
-});
-builder.EnrichAzureNpgsqlDbContext<TransactionsDbContext>();
-
+        npgsqlOptions => npgsqlOptions.EnableRetryOnFailure(maxRetryCount: 3)));
 builder.Services.AddHealthChecks()
     .AddDbContextCheck<TransactionsDbContext>("transactions-db", tags: ["ready"]);
 
