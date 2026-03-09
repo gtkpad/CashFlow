@@ -22,7 +22,11 @@ public sealed class TransactionConfiguration : IEntityTypeConfiguration<Transact
             .IsRequired();
 
         builder.Property(t => t.ReferenceDate).HasColumnName("reference_date").IsRequired();
-        builder.Property(t => t.Type).HasColumnName("type").IsRequired();
+        builder.Property(t => t.Type)
+            .HasColumnName("type")
+            .HasConversion<string>()
+            .HasMaxLength(50)
+            .IsRequired();
         builder.Property(t => t.Description).HasColumnName("description").HasMaxLength(500).IsRequired();
         builder.Property(t => t.CreatedAt).HasColumnName("created_at").IsRequired();
         builder.Property(t => t.CreatedBy).HasColumnName("created_by").HasMaxLength(128);
