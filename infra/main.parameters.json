@@ -14,6 +14,9 @@
       "messaging_password": {
         "value": "${AZURE_MESSAGING_PASSWORD}"
       },
+      "messaging_username": {
+        "value": "${AZURE_MESSAGING_USERNAME}"
+      },
       "environmentName": {
         "value": "${AZURE_ENV_NAME}"
       },
