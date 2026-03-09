@@ -8,7 +8,7 @@ namespace CashFlow.UnitTests.Consolidation;
 
 public class DailyBalanceCachePolicyTests
 {
-    private readonly DailyBalanceCachePolicy _policy = new();
+    private readonly DailyBalanceCachePolicy _policy = new(TimeProvider.System);
 
     private static OutputCacheContext CreateContext(string? date = null, string? userId = null)
     {

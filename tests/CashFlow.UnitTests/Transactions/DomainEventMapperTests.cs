@@ -45,18 +45,18 @@ public class DomainEventMapperTests
     }
 
     [Fact]
-    public async Task PublishIntegrationEvent_UnmappedEvent_ShouldNotPublish()
+    public async Task PublishIntegrationEvent_UnmappedEvent_ShouldThrowInvalidOperationException()
     {
         // Arrange
         var unmappedEvent = new UnmappedEvent();
 
         // Act
-        await DomainEventMapper.PublishIntegrationEvent(
+        var act = () => DomainEventMapper.PublishIntegrationEvent(
             unmappedEvent, _publishEndpoint, CancellationToken.None);
 
         // Assert
-        await _publishEndpoint.DidNotReceiveWithAnyArgs()
-            .Publish<ITransactionCreated>(default!, Arg.Any<CancellationToken>());
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("*No integration event publisher found*");
     }
 
     private record UnmappedEvent : IDomainEvent

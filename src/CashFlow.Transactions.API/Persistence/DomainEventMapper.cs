@@ -19,9 +19,11 @@ public static class DomainEventMapper
         IPublishEndpoint publishEndpoint,
         CancellationToken cancellationToken)
     {
-        return Publishers.TryGetValue(domainEvent.GetType(), out var publisher)
-            ? publisher(domainEvent, publishEndpoint, cancellationToken)
-            : Task.CompletedTask;
+        if (!Publishers.TryGetValue(domainEvent.GetType(), out var publisher))
+            throw new InvalidOperationException(
+                $"No integration event publisher found for domain event '{domainEvent.GetType().Name}'. " +
+                "Register a publisher in DomainEventMapper.");
+        return publisher(domainEvent, publishEndpoint, cancellationToken);
     }
 
     private record TransactionCreatedEvent(

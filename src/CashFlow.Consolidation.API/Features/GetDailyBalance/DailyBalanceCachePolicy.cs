@@ -3,7 +3,7 @@ using Microsoft.Extensions.Primitives;
 
 namespace CashFlow.Consolidation.API.Features.GetDailyBalance;
 
-public sealed class DailyBalanceCachePolicy : IOutputCachePolicy
+public sealed class DailyBalanceCachePolicy(TimeProvider timeProvider) : IOutputCachePolicy
 {
     public ValueTask CacheRequestAsync(OutputCacheContext context, CancellationToken ct)
     {
@@ -14,7 +14,7 @@ public sealed class DailyBalanceCachePolicy : IOutputCachePolicy
 
         var dateStr = context.HttpContext.Request.RouteValues["date"]?.ToString();
         var isPastDate = DateOnly.TryParse(dateStr, out var date)
-                         && date < DateOnly.FromDateTime(DateTime.UtcNow);
+                         && date < DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime);
 
         context.ResponseExpirationTimeSpan = isPastDate
             ? TimeSpan.FromHours(1)

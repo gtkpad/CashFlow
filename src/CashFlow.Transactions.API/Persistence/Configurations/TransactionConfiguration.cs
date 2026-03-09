@@ -36,6 +36,8 @@ public sealed class TransactionConfiguration : IEntityTypeConfiguration<Transact
         // xmin concurrency token (shadow property — replaces deprecated UseXminAsConcurrencyToken)
         builder.Property<uint>("xmin").IsRowVersion();
         builder.HasIndex(t => t.ReferenceDate).HasDatabaseName("ix_transaction_reference_date");
+        builder.HasIndex(t => new { t.MerchantId, t.ReferenceDate })
+            .HasDatabaseName("ix_transaction_merchant_id_reference_date");
         builder.Ignore(t => t.DomainEvents);
     }
 }

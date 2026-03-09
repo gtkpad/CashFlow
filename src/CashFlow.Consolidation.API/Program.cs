@@ -47,10 +47,11 @@ builder.Services.AddCarter(configurator: c =>
 {
     c.WithModule<GetDailyBalanceEndpoint>();
 });
+builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddOutputCache(options =>
 {
     options.AddPolicy("DailyBalance",
-        new DailyBalanceCachePolicy());
+        new DailyBalanceCachePolicy(TimeProvider.System));
 });
 builder.Services.AddScoped<IDailySummaryRepository, DailySummaryRepository>();
 builder.Services.AddScoped<GetDailyBalanceHandler>();

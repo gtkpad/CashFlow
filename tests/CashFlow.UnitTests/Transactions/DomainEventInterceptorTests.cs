@@ -100,7 +100,7 @@ public class DomainEventInterceptorTests
     }
 
     [Fact]
-    public async Task SaveChangesAsync_UnmappedDomainEvent_ShouldNotPublish()
+    public async Task SaveChangesAsync_UnmappedDomainEvent_ShouldThrow()
     {
         // Arrange
         await using var context = CreateContext();
@@ -113,7 +113,6 @@ public class DomainEventInterceptorTests
             "user@test.com").Value;
 
         // Clear the mapped TransactionCreated event and inject an unmapped one via reflection
-        // (Raise is protected on Entity<TId>)
         transaction.ClearDomainEvents();
         var domainEventsField = typeof(Entity<TransactionId>)
             .GetField("_domainEvents", BindingFlags.NonPublic | BindingFlags.Instance)!;
@@ -122,14 +121,12 @@ public class DomainEventInterceptorTests
 
         context.Transactions.Add(transaction);
 
-        // Act
-        await context.SaveChangesAsync();
+        // Act — fail-fast: unmapped events are a programming error, must propagate
+        var act = () => context.SaveChangesAsync();
 
-        // Assert — unmapped event returns null from DomainEventMapper, so no publish
-        await _publishEndpoint.DidNotReceiveWithAnyArgs().Publish<ITransactionCreated>(
-            default!, Arg.Any<CancellationToken>());
-
-        transaction.DomainEvents.Should().BeEmpty("interceptor should still clear events");
+        // Assert
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("*No integration event publisher found*");
     }
 
     private record UnmappedDomainEvent : IDomainEvent
