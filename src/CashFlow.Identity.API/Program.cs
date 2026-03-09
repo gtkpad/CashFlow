@@ -62,10 +62,11 @@ using (var scope = app.Services.CreateScope())
     await db.Database.MigrateAsync();
 }
 
-app.MapDefaultEndpoints();
 app.UseGlobalExceptionHandling();
+app.MapDefaultEndpoints();
 app.UseMiddleware<CashFlow.ServiceDefaults.GatewaySecretMiddleware>();
 
+// DisableAntiforgery: Identity endpoints are stateless (JWT Bearer). CSRF não se aplica a JSON/Bearer auth.
 app.MapGroup("/api/identity")
     .MapIdentityApi<IdentityUser>()
     .DisableAntiforgery();
