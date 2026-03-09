@@ -14,7 +14,11 @@ internal static class MessagingExtensions
             x.AddConsumer<TransactionCreatedConsumer, TransactionCreatedConsumerDefinition>();
             x.AddConsumer<TransactionFaultConsumer>();
 
-            x.AddEntityFrameworkOutbox<ConsolidationDbContext>(o => { o.UsePostgres(); });
+            x.AddEntityFrameworkOutbox<ConsolidationDbContext>(o =>
+            {
+                o.UsePostgres();
+                o.DuplicateDetectionWindow = TimeSpan.FromMinutes(30);
+            });
 
             x.ConfigureHealthCheckOptions(options =>
             {
