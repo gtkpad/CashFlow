@@ -7,10 +7,11 @@ internal static class DatabaseExtensions
 {
     internal static WebApplicationBuilder AddDatabase(this WebApplicationBuilder builder)
     {
-        builder.Services.AddDbContext<TransactionsDbContext>(options =>
-            options.UseNpgsql(
-                builder.Configuration.GetConnectionString("transactions-db"),
-                npgsql => npgsql.EnableRetryOnFailure(3)));
+        builder.AddAzureNpgsqlDbContext<TransactionsDbContext>("transactions-db",
+            configureDbContextOptions: options =>
+            {
+                options.UseNpgsql(npgsqlOptions => npgsqlOptions.EnableRetryOnFailure(3));
+            });
 
         builder.Services.AddHealthChecks()
             .AddDbContextCheck<TransactionsDbContext>("transactions-db", tags: ["ready"]);
