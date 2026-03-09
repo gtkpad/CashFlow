@@ -19,7 +19,7 @@ public sealed class TransactionCreatedConsumer(
 {
     public async Task Consume(ConsumeContext<ITransactionCreated> context)
     {
-        var stopwatch = Stopwatch.StartNew();
+        var startTimestamp = Stopwatch.GetTimestamp();
         var evt = context.Message;
         var merchantId = new MerchantId(evt.MerchantId);
         var type = Enum.Parse<TransactionType>(evt.TransactionType);
@@ -31,9 +31,10 @@ public sealed class TransactionCreatedConsumer(
         var summary = await repo.GetByDateAndMerchant(merchantId, evt.ReferenceDate)
                       ?? DailySummary.CreateForDay(merchantId, evt.ReferenceDate);
 
+        var isNew = summary.TransactionCount == 0;
         summary.ApplyTransaction(type, new Money(evt.Amount, evt.Currency));
 
-        if (summary.TransactionCount == 1)
+        if (isNew)
             await repo.AddAsync(summary);
 
         // EF Core change tracker persists modified entities on SaveChangesAsync
@@ -42,9 +43,9 @@ public sealed class TransactionCreatedConsumer(
         var tag = $"balance-{evt.MerchantId}-{evt.ReferenceDate:yyyy-MM-dd}";
         await cacheStore.EvictByTagAsync(tag, context.CancellationToken);
 
-        stopwatch.Stop();
+        var elapsed = Stopwatch.GetElapsedTime(startTimestamp);
         metrics.RecordConsolidationEventProcessed("success");
-        metrics.RecordConsolidationProcessingDuration(stopwatch.Elapsed.TotalMilliseconds);
+        metrics.RecordConsolidationProcessingDuration(elapsed.TotalMilliseconds);
 
         if (context.SentTime.HasValue)
         {

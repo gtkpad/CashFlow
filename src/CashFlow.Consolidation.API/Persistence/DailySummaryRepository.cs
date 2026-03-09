@@ -6,16 +6,11 @@ namespace CashFlow.Consolidation.API.Persistence;
 
 public sealed class DailySummaryRepository(ConsolidationDbContext db) : IDailySummaryRepository
 {
-    // SEM AsNoTracking: o consumer precisa de change tracking para SaveChangesAsync detectar modificações
-    private static readonly Func<ConsolidationDbContext, MerchantId, DateOnly, Task<DailySummary?>>
-        _getByDateAndMerchant = EF.CompileAsyncQuery(
-            (ConsolidationDbContext ctx, MerchantId merchantId, DateOnly date) =>
-                ctx.DailySummaries
-                    .FirstOrDefault(d => d.MerchantId == merchantId && d.Date == date));
-
+    // Without AsNoTracking: the consumer needs change tracking so SaveChangesAsync detects modifications
     public Task<DailySummary?> GetByDateAndMerchant(
         MerchantId merchantId, DateOnly date, CancellationToken ct = default)
-        => _getByDateAndMerchant(db, merchantId, date);
+        => db.DailySummaries
+            .FirstOrDefaultAsync(d => d.MerchantId == merchantId && d.Date == date, ct);
 
     public async Task AddAsync(DailySummary summary, CancellationToken ct = default)
         => await db.DailySummaries.AddAsync(summary, ct);

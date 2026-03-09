@@ -43,7 +43,6 @@ public sealed record Money : IValueObject
     private static void EnsureSameCurrency(Money a, Money b)
     {
         if (a.Currency != b.Currency)
-            throw new InvalidOperationException(
-                $"Cannot perform operation on different currencies: {a.Currency} and {b.Currency}");
+            throw new CurrencyMismatchException(a.Currency, b.Currency);
     }
 }

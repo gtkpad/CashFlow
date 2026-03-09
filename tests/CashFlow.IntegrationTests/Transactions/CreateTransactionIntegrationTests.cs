@@ -5,13 +5,11 @@ using FluentAssertions;
 
 namespace CashFlow.IntegrationTests.Transactions;
 
+[Collection("IntegrationTests")]
 public class CreateTransactionIntegrationTests(TransactionsApiFactory factory)
     : IClassFixture<TransactionsApiFactory>
 {
     private readonly HttpClient _client = factory.CreateAuthenticatedClient();
-
-    private void SetMerchantId(Guid merchantId)
-        => _client.DefaultRequestHeaders.Remove("X-User-Id");
 
     private void SetMerchantId(string merchantId)
     {

@@ -14,7 +14,8 @@ builder.Services.AddReverseProxy()
     .LoadFromConfig(builder.Configuration.GetSection("ReverseProxy"))
     .AddServiceDiscoveryDestinationResolver();
 
-var validAudiences = builder.Configuration.GetSection("Identity:ValidAudiences").Get<string[]>();
+var validAudiences = builder.Configuration.GetSection("Identity:ValidAudiences").Get<string[]>()
+    ?? ["cashflow-api"];
 
 var jwtSigningKey = builder.Configuration["Jwt:SigningKey"]
     ?? throw new InvalidOperationException("Jwt:SigningKey configuration is required");

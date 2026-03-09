@@ -14,6 +14,10 @@ using CashFlow.ServiceDefaults;
 
 namespace CashFlow.IntegrationTests.Consolidation;
 
+// All integration tests share this collection to prevent parallel execution.
+// MassTransit's in-memory LoopbackTransport has a process-level routing table;
+// running harnesses concurrently causes cross-test message delivery and faults.
+[Collection("IntegrationTests")]
 public class TransactionCreatedConsumerTests : IAsyncLifetime
 {
     private ServiceProvider _provider = null!;

@@ -1,3 +1,4 @@
+using CashFlow.Domain.SharedKernel;
 using CashFlow.ServiceDefaults;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
@@ -32,6 +33,17 @@ public class GlobalExceptionHandlerTests
 
         statusCode.Should().Be(StatusCodes.Status400BadRequest);
         title.Should().Be("Argument Out of Range");
+    }
+
+    [Fact]
+    public void MapException_CurrencyMismatch_ShouldReturn422()
+    {
+        var exception = new CurrencyMismatchException("BRL", "USD");
+
+        var (statusCode, title) = GlobalExceptionHandler.MapException(exception);
+
+        statusCode.Should().Be(StatusCodes.Status422UnprocessableEntity);
+        title.Should().Be("Currency Mismatch");
     }
 
     [Fact]
