@@ -22,7 +22,7 @@ public sealed class GetTransactionEndpoint : ICarterModule
                 return result is not null
                     ? Results.Ok(result)
                     : Results.Problem(
-                        $"Transaction {id} not found.",
+                        detail: $"Transaction {id} not found.",
                         statusCode: StatusCodes.Status404NotFound,
                         title: "Resource Not Found");
             })
