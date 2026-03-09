@@ -1,3 +1,4 @@
+using Asp.Versioning;
 using Carter;
 using CashFlow.Domain.SharedKernel;
 using CashFlow.Domain.Transactions;
@@ -27,6 +28,13 @@ internal static class ApplicationExtensions
             sp.GetRequiredService<TransactionsDbContext>());
         builder.Services.AddScoped<CreateTransactionHandler>();
         builder.Services.AddScoped<GetTransactionHandler>();
+
+        builder.Services.AddApiVersioning(options =>
+        {
+            options.DefaultApiVersion = new ApiVersion(1, 0);
+            options.AssumeDefaultVersionWhenUnspecified = true;
+            options.ReportApiVersions = true;
+        });
 
         builder.Services.AddOpenApi();
 
