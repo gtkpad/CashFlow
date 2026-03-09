@@ -1,25 +1,21 @@
 using CashFlow.Domain.SharedKernel;
 using CashFlow.Domain.Transactions;
 using CashFlow.Transactions.API.Features.GetTransaction;
-using CashFlow.Transactions.API.Persistence;
 using FluentAssertions;
-using Microsoft.EntityFrameworkCore;
+using NSubstitute;
 
 namespace CashFlow.UnitTests.Transactions;
 
-public class GetTransactionHandlerTests : IDisposable
+public class GetTransactionHandlerTests
 {
-    private readonly TransactionsDbContext _dbContext;
+    private readonly ITransactionRepository _repository;
     private readonly GetTransactionHandler _handler;
     private readonly Guid _merchantId = Guid.NewGuid();
 
     public GetTransactionHandlerTests()
     {
-        var options = new DbContextOptionsBuilder<TransactionsDbContext>()
-            .UseInMemoryDatabase(Guid.NewGuid().ToString())
-            .Options;
-        _dbContext = new TransactionsDbContext(options);
-        _handler = new GetTransactionHandler(_dbContext);
+        _repository = Substitute.For<ITransactionRepository>();
+        _handler = new GetTransactionHandler(_repository);
     }
 
     [Fact]
@@ -29,8 +25,9 @@ public class GetTransactionHandlerTests : IDisposable
             new MerchantId(_merchantId), DateOnly.FromDateTime(DateTime.Today),
             TransactionType.Credit, new Money(150m), "Sale #1", "user@test.com").Value;
 
-        _dbContext.Transactions.Add(transaction);
-        await _dbContext.SaveChangesAsync();
+        _repository
+            .GetByIdAndMerchantAsync(transaction.Id, new MerchantId(_merchantId), Arg.Any<CancellationToken>())
+            .Returns(transaction);
 
         var result = await _handler.HandleAsync(_merchantId, transaction.Id.Value);
 
@@ -43,6 +40,10 @@ public class GetTransactionHandlerTests : IDisposable
     [Fact]
     public async Task HandleAsync_NonExistentId_ShouldReturnNull()
     {
+        _repository
+            .GetByIdAndMerchantAsync(Arg.Any<TransactionId>(), Arg.Any<MerchantId>(), Arg.Any<CancellationToken>())
+            .Returns((Transaction?)null);
+
         var result = await _handler.HandleAsync(_merchantId, Guid.NewGuid());
 
         result.Should().BeNull();
@@ -51,21 +52,12 @@ public class GetTransactionHandlerTests : IDisposable
     [Fact]
     public async Task HandleAsync_TransactionOfDifferentMerchant_ShouldReturnNull()
     {
-        var otherMerchantId = Guid.NewGuid();
-        var transaction = Transaction.Create(
-            new MerchantId(otherMerchantId), DateOnly.FromDateTime(DateTime.Today),
-            TransactionType.Debit, new Money(75m), "Other merchant", "user@test.com").Value;
+        _repository
+            .GetByIdAndMerchantAsync(Arg.Any<TransactionId>(), Arg.Any<MerchantId>(), Arg.Any<CancellationToken>())
+            .Returns((Transaction?)null);
 
-        _dbContext.Transactions.Add(transaction);
-        await _dbContext.SaveChangesAsync();
-
-        var result = await _handler.HandleAsync(_merchantId, transaction.Id.Value);
+        var result = await _handler.HandleAsync(_merchantId, Guid.NewGuid());
 
         result.Should().BeNull();
-    }
-
-    public void Dispose()
-    {
-        _dbContext.Dispose();
     }
 }

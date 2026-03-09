@@ -1,11 +1,10 @@
 using CashFlow.Domain.SharedKernel;
 using MassTransit;
 using Microsoft.EntityFrameworkCore.Diagnostics;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace CashFlow.Transactions.API.Persistence;
 
-public sealed class DomainEventInterceptor(IServiceProvider serviceProvider) : SaveChangesInterceptor
+public sealed class DomainEventInterceptor(Func<IPublishEndpoint> publishEndpointFactory) : SaveChangesInterceptor
 {
     public override async ValueTask<InterceptionResult<int>> SavingChangesAsync(
         DbContextEventData eventData,
@@ -26,7 +25,7 @@ public sealed class DomainEventInterceptor(IServiceProvider serviceProvider) : S
             .SelectMany(e => e.DomainEvents)
             .ToList();
 
-        var publishEndpoint = serviceProvider.GetRequiredService<IPublishEndpoint>();
+        var publishEndpoint = publishEndpointFactory();
 
         foreach (var domainEvent in domainEvents)
         {

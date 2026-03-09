@@ -199,4 +199,24 @@ public class DependencyTests
                 .GetResult().IsSuccessful.Should().BeTrue();
         }
     }
+
+    [Fact]
+    public void Handlers_ShouldNotDependOn_DbContext()
+    {
+        foreach (var assembly in new[]
+        {
+            typeof(CashFlow.Transactions.API.Persistence.TransactionsDbContext).Assembly,
+            typeof(CashFlow.Consolidation.API.Persistence.ConsolidationDbContext).Assembly
+        })
+        {
+            var result = Types.InAssembly(assembly)
+                .That().ResideInNamespaceContaining("Features")
+                .And().HaveNameEndingWith("Handler")
+                .ShouldNot().HaveDependencyOn("Microsoft.EntityFrameworkCore")
+                .GetResult();
+
+            result.IsSuccessful.Should().BeTrue(
+                because: $"Handlers in {assembly.GetName().Name} must not depend on DbContext — use repositories");
+        }
+    }
 }

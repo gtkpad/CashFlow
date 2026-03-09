@@ -3,6 +3,7 @@ using System.IO.Compression;
 using System.Text;
 using System.Threading.RateLimiting;
 using CashFlow.Gateway.Middleware;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.IdentityModel.Tokens;
 
@@ -86,6 +87,15 @@ builder.Services.AddResponseCompression(options =>
 builder.Services.Configure<BrotliCompressionProviderOptions>(options =>
     options.Level = CompressionLevel.Fastest);
 
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    // Accept forwarded headers from any proxy (Azure Container Apps uses RFC 1918 ranges)
+    options.KnownIPNetworks.Clear();
+    options.KnownProxies.Clear();
+    options.ForwardLimit = 1;
+});
+
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -105,6 +115,7 @@ app.UseProductionHttpsSecurity();
 app.UseGlobalExceptionHandling();
 app.MapDefaultEndpoints();
 
+app.UseForwardedHeaders();
 app.UseResponseCompression();
 
 // Security headers + trace ID correlation

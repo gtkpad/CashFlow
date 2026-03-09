@@ -1,7 +1,5 @@
 using CashFlow.Domain.SharedKernel;
 using CashFlow.Domain.Transactions;
-using CashFlow.Transactions.API.Persistence;
-using Microsoft.EntityFrameworkCore;
 
 namespace CashFlow.Transactions.API.Features.GetTransaction;
 
@@ -10,16 +8,13 @@ public record GetTransactionResponse(
     decimal Amount, string Currency, string Description,
     DateTimeOffset CreatedAt, string? CreatedBy);
 
-public sealed class GetTransactionHandler(TransactionsDbContext db)
+public sealed class GetTransactionHandler(ITransactionRepository repository)
 {
     public async Task<GetTransactionResponse?> HandleAsync(
         Guid merchantId, Guid transactionId, CancellationToken ct = default)
     {
-        var txId = new TransactionId(transactionId);
-        var mId = new MerchantId(merchantId);
-        var transaction = await db.Transactions
-            .AsNoTracking()
-            .FirstOrDefaultAsync(t => t.Id == txId && t.MerchantId == mId, ct);
+        var transaction = await repository.GetByIdAndMerchantAsync(
+            new TransactionId(transactionId), new MerchantId(merchantId), ct);
 
         if (transaction is null)
             return null;

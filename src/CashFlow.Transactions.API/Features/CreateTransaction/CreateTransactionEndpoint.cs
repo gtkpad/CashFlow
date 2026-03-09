@@ -1,12 +1,10 @@
 using Carter;
 using CashFlow.ServiceDefaults;
-using CashFlow.Transactions.API.Features.CreateTransaction;
-using CashFlow.Transactions.API.Features.GetTransaction;
 using FluentValidation;
 
-namespace CashFlow.Transactions.API.Features;
+namespace CashFlow.Transactions.API.Features.CreateTransaction;
 
-public sealed class TransactionEndpoints : ICarterModule
+public sealed class CreateTransactionEndpoint : ICarterModule
 {
     public void AddRoutes(IEndpointRouteBuilder app)
     {
@@ -44,25 +42,5 @@ public sealed class TransactionEndpoints : ICarterModule
         .Produces<CreateTransactionResponse>(StatusCodes.Status201Created)
         .ProducesValidationProblem()
         .ProducesProblem(StatusCodes.Status400BadRequest);
-
-        group.MapGet("/{id:guid}", async (
-            Guid id, HttpContext httpContext,
-            GetTransactionHandler handler, CancellationToken ct) =>
-        {
-            var merchantId = httpContext.GetMerchantId();
-            var result = await handler.HandleAsync(merchantId, id, ct);
-
-            return result is not null
-                ? Results.Ok(result)
-                : Results.Problem(
-                    detail: $"Transaction {id} not found.",
-                    statusCode: StatusCodes.Status404NotFound,
-                    title: "Resource Not Found");
-        })
-        .WithName("GetTransaction")
-        .WithSummary("Get a transaction by ID")
-        .WithDescription("Retrieves the full details of a transaction belonging to the authenticated merchant.")
-        .Produces<GetTransactionResponse>()
-        .ProducesProblem(StatusCodes.Status404NotFound);
     }
 }

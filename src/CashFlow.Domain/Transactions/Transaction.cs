@@ -44,6 +44,7 @@ public sealed class Transaction : Entity<TransactionId>, IAggregateRoot
         transaction.Raise(
             new TransactionCreated
             {
+                OccurredAt = (clock ?? TimeProvider.System).GetUtcNow(),
                 TransactionId = transaction.Id,
                 MerchantId = merchantId,
                 ReferenceDate = date,

@@ -1,6 +1,5 @@
 using Carter;
 using CashFlow.Domain.Transactions;
-using CashFlow.Transactions.API.Features;
 using CashFlow.Transactions.API.Features.CreateTransaction;
 using CashFlow.Transactions.API.Features.GetTransaction;
 using CashFlow.Transactions.API.Persistence;
@@ -45,10 +44,12 @@ builder.Services.AddMassTransit(x =>
 
 builder.Services.AddCarter(configurator: c =>
 {
-    c.WithModule<TransactionEndpoints>();
+    c.WithModule<CreateTransactionEndpoint>();
+    c.WithModule<GetTransactionEndpoint>();
 });
 builder.Services.AddValidatorsFromAssemblyContaining<CreateTransactionValidator>();
-builder.Services.AddScoped<DomainEventInterceptor>();
+builder.Services.AddScoped<DomainEventInterceptor>(sp =>
+    new DomainEventInterceptor(() => sp.GetRequiredService<IPublishEndpoint>()));
 builder.Services.AddScoped<ITransactionRepository, TransactionRepository>();
 builder.Services.AddScoped<CashFlow.Domain.SharedKernel.IUnitOfWork>(sp =>
     sp.GetRequiredService<TransactionsDbContext>());

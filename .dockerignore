@@ -1,0 +1,17 @@
+**/bin/
+**/obj/
+**/.vs/
+**/.idea/
+**/.vscode/
+**/*.user
+**/.git/
+**/.gitattributes
+**/.gitignore
+**/.githooks/
+**/TestResults/
+**/coverage/
+.github/
+docs/
+tests/
+infra/
+*.md

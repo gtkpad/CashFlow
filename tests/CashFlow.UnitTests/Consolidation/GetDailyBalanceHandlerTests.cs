@@ -1,24 +1,20 @@
 using CashFlow.Consolidation.API.Features.GetDailyBalance;
-using CashFlow.Consolidation.API.Persistence;
 using CashFlow.Domain.Consolidation;
 using CashFlow.Domain.SharedKernel;
 using FluentAssertions;
-using Microsoft.EntityFrameworkCore;
+using NSubstitute;
 
 namespace CashFlow.UnitTests.Consolidation;
 
-public class GetDailyBalanceHandlerTests : IDisposable
+public class GetDailyBalanceHandlerTests
 {
-    private readonly ConsolidationDbContext _db;
+    private readonly IDailySummaryRepository _repository;
     private readonly GetDailyBalanceHandler _handler;
 
     public GetDailyBalanceHandlerTests()
     {
-        var options = new DbContextOptionsBuilder<ConsolidationDbContext>()
-            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
-            .Options;
-        _db = new ConsolidationDbContext(options);
-        _handler = new GetDailyBalanceHandler(_db);
+        _repository = Substitute.For<IDailySummaryRepository>();
+        _handler = new GetDailyBalanceHandler(_repository);
     }
 
     [Fact]
@@ -29,8 +25,9 @@ public class GetDailyBalanceHandlerTests : IDisposable
         var summary = DailySummary.CreateForDay(merchantId, date);
         summary.ApplyTransaction(TransactionType.Credit, new Money(100m, "BRL"));
 
-        _db.DailySummaries.Add(summary);
-        await _db.SaveChangesAsync();
+        _repository
+            .GetByDateAndMerchant(merchantId, date, Arg.Any<CancellationToken>())
+            .Returns(summary);
 
         var result = await _handler.HandleAsync(merchantId.Value, date);
 
@@ -45,6 +42,10 @@ public class GetDailyBalanceHandlerTests : IDisposable
     [Fact]
     public async Task HandleAsync_NoSummaryExists_ReturnsNull()
     {
+        _repository
+            .GetByDateAndMerchant(Arg.Any<MerchantId>(), Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns((DailySummary?)null);
+
         var result = await _handler.HandleAsync(Guid.NewGuid(), new DateOnly(2025, 1, 1));
 
         result.Should().BeNull();
@@ -53,22 +54,12 @@ public class GetDailyBalanceHandlerTests : IDisposable
     [Fact]
     public async Task HandleAsync_DifferentMerchant_ReturnsNull()
     {
-        var merchantId = new MerchantId(Guid.NewGuid());
-        var date = new DateOnly(2025, 6, 15);
-        var summary = DailySummary.CreateForDay(merchantId, date);
-        summary.ApplyTransaction(TransactionType.Credit, new Money(50m, "BRL"));
+        _repository
+            .GetByDateAndMerchant(Arg.Any<MerchantId>(), Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns((DailySummary?)null);
 
-        _db.DailySummaries.Add(summary);
-        await _db.SaveChangesAsync();
-
-        var otherMerchantId = Guid.NewGuid();
-        var result = await _handler.HandleAsync(otherMerchantId, date);
+        var result = await _handler.HandleAsync(Guid.NewGuid(), new DateOnly(2025, 6, 15));
 
         result.Should().BeNull();
-    }
-
-    public void Dispose()
-    {
-        _db.Dispose();
     }
 }
