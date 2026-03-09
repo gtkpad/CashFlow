@@ -7,11 +7,14 @@ internal static class DatabaseExtensions
 {
     internal static WebApplicationBuilder AddDatabase(this WebApplicationBuilder builder)
     {
-        builder.AddAzureNpgsqlDbContext<TransactionsDbContext>("transactions-db",
-            configureDbContextOptions: options =>
-            {
-                options.UseNpgsql(npgsqlOptions => npgsqlOptions.EnableRetryOnFailure(3));
-            });
+        // Note: Uses Aspire.Npgsql (non-Azure) because TransactionsDbContext injects a scoped
+        // DomainEventInterceptor via OnConfiguring, which is incompatible with DbContext pooling
+        // enabled by AddAzureNpgsqlDbContext. Consolidation API can use Azure variant because
+        // it has no interceptor dependency.
+        builder.Services.AddDbContext<TransactionsDbContext>(options =>
+            options.UseNpgsql(
+                builder.Configuration.GetConnectionString("transactions-db"),
+                npgsql => npgsql.EnableRetryOnFailure(3)));
 
         builder.Services.AddHealthChecks()
             .AddDbContextCheck<TransactionsDbContext>("transactions-db", tags: ["ready"]);
