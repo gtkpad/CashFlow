@@ -10,7 +10,7 @@ internal static class DatabaseExtensions
         builder.AddAzureNpgsqlDbContext<ConsolidationDbContext>("consolidation-db",
             configureDbContextOptions: options =>
             {
-                options.UseNpgsql(npgsqlOptions => npgsqlOptions.EnableRetryOnFailure(maxRetryCount: 3));
+                options.UseNpgsql(npgsqlOptions => npgsqlOptions.EnableRetryOnFailure(3));
             });
 
         builder.Services.AddHealthChecks()

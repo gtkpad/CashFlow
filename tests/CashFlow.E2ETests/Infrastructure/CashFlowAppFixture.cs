@@ -2,19 +2,18 @@ using Aspire.Hosting;
 using Aspire.Hosting.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Projects;
 
 namespace CashFlow.E2ETests.Infrastructure;
 
 public class CashFlowAppFixture : IAsyncLifetime
 {
-    private DistributedApplication _app = null!;
-
-    public DistributedApplication App => _app;
-
     /// <summary>
-    /// Maximum time to wait for the AppHost and all resources to start.
+    ///     Maximum time to wait for the AppHost and all resources to start.
     /// </summary>
     public static readonly TimeSpan StartupTimeout = TimeSpan.FromMinutes(15);
+
+    public DistributedApplication App { get; private set; } = null!;
 
     public async Task InitializeAsync()
     {
@@ -29,7 +28,7 @@ public class CashFlowAppFixture : IAsyncLifetime
         Environment.SetEnvironmentVariable("CASHFLOW_E2E_TESTING", "true");
 
         var appHost = await DistributedApplicationTestingBuilder
-            .CreateAsync<Projects.CashFlow_AppHost>(ct);
+            .CreateAsync<CashFlow_AppHost>(ct);
 
         // Provide values for secret parameters not available in CI environment.
         // Parameters are resolved lazily (during StartAsync), so post-CreateAsync injection works.
@@ -45,9 +44,9 @@ public class CashFlowAppFixture : IAsyncLifetime
         });
 
         // Build and start with timeout safety (Context7 pattern)
-        _app = await appHost.BuildAsync(ct)
+        App = await appHost.BuildAsync(ct)
             .WaitAsync(StartupTimeout, ct);
-        await _app.StartAsync(ct)
+        await App.StartAsync(ct)
             .WaitAsync(StartupTimeout, ct);
 
         // StartAsync returns when all resources reach their target state:
@@ -59,10 +58,7 @@ public class CashFlowAppFixture : IAsyncLifetime
         // Functional readiness is verified by the E2E test assertions themselves.
     }
 
-    public async Task DisposeAsync()
-    {
-        await _app.DisposeAsync();
-    }
+    public async Task DisposeAsync() => await App.DisposeAsync();
 }
 
 [CollectionDefinition(Name)]

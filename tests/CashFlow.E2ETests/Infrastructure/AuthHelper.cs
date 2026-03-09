@@ -37,8 +37,8 @@ public static class AuthHelper
         var loginResult = await loginResponse.Content
             .ReadFromJsonAsync<LoginResponse>(JsonOptions);
         var accessToken = loginResult?.AccessToken
-            ?? throw new InvalidOperationException(
-                "Login response did not contain an access token");
+                          ?? throw new InvalidOperationException(
+                              "Login response did not contain an access token");
 
         // Decode JWT payload to extract the user ID (sub claim) without
         // adding a dependency on System.IdentityModel.Tokens.Jwt
@@ -51,8 +51,10 @@ public static class AuthHelper
     {
         var parts = jwt.Split('.');
         if (parts.Length < 2)
+        {
             throw new InvalidOperationException(
                 $"Invalid JWT format (expected 3 parts, got {parts.Length})");
+        }
 
         // JWT payload is base64url-encoded
         var payload = parts[1];
@@ -68,20 +70,26 @@ public static class AuthHelper
         using var doc = JsonDocument.Parse(json);
 
         if (doc.RootElement.TryGetProperty("sub", out var sub))
+        {
             return sub.GetString()
                    ?? throw new InvalidOperationException("sub claim is null");
+        }
 
         // JwtSecurityTokenHandler maps ClaimTypes.NameIdentifier to "nameid" in JWT JSON
         if (doc.RootElement.TryGetProperty("nameid", out var nameIdShort))
+        {
             return nameIdShort.GetString()
                    ?? throw new InvalidOperationException("nameid claim is null");
+        }
 
         // ASP.NET Identity may use the full claim URI
         if (doc.RootElement.TryGetProperty(
                 "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier",
                 out var nameId))
+        {
             return nameId.GetString()
                    ?? throw new InvalidOperationException("nameidentifier claim is null");
+        }
 
         throw new InvalidOperationException(
             $"Could not extract user ID from JWT. Payload: {json}");
@@ -90,8 +98,12 @@ public static class AuthHelper
     public record AuthResult(string AccessToken, string UserId);
 
     private record LoginResponse(
-        [property: JsonPropertyName("tokenType")] string TokenType,
-        [property: JsonPropertyName("accessToken")] string AccessToken,
-        [property: JsonPropertyName("expiresIn")] int ExpiresIn,
-        [property: JsonPropertyName("refreshToken")] string RefreshToken);
+        [property: JsonPropertyName("tokenType")]
+        string TokenType,
+        [property: JsonPropertyName("accessToken")]
+        string AccessToken,
+        [property: JsonPropertyName("expiresIn")]
+        int ExpiresIn,
+        [property: JsonPropertyName("refreshToken")]
+        string RefreshToken);
 }

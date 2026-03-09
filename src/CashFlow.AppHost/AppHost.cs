@@ -1,7 +1,9 @@
+using Projects;
+
 var builder = DistributedApplication.CreateBuilder(args);
 
-var gatewaySecret = builder.AddParameter("gateway-secret", secret: true);
-var jwtSigningKey = builder.AddParameter("jwt-signing-key", secret: true);
+var gatewaySecret = builder.AddParameter("gateway-secret", true);
+var jwtSigningKey = builder.AddParameter("jwt-signing-key", true);
 
 var serviceVersion = builder.Configuration["OTEL_SERVICE_VERSION"] ?? "1.0.0-dev";
 var skipDevResources = Environment.GetEnvironmentVariable("CASHFLOW_E2E_TESTING") == "true";
@@ -12,9 +14,7 @@ var skipDevResources = Environment.GetEnvironmentVariable("CASHFLOW_E2E_TESTING"
 
 // Infrastructure
 if (!skipDevResources)
-{
     builder.AddAzureContainerAppEnvironment("env");
-}
 
 var postgres = builder.AddAzurePostgresFlexibleServer("postgres")
     .RunAsContainer(c =>
@@ -39,7 +39,7 @@ if (!skipDevResources)
 }
 
 // Services
-var identity = builder.AddProject<Projects.CashFlow_Identity_API>("identity")
+var identity = builder.AddProject<CashFlow_Identity_API>("identity")
     .WithReference(identityDb)
     .WithEnvironment("Identity__Audience", "cashflow-api")
     .WithEnvironment("Jwt__SigningKey", jwtSigningKey)
@@ -47,7 +47,7 @@ var identity = builder.AddProject<Projects.CashFlow_Identity_API>("identity")
     .WithEnvironment("OTEL_SERVICE_VERSION", serviceVersion)
     .WaitFor(identityDb);
 
-var transactions = builder.AddProject<Projects.CashFlow_Transactions_API>("transactions")
+var transactions = builder.AddProject<CashFlow_Transactions_API>("transactions")
     .WithReference(transactionsDb)
     .WithReference(rabbitmq)
     .WithEnvironment("Gateway__Secret", gatewaySecret)
@@ -55,7 +55,7 @@ var transactions = builder.AddProject<Projects.CashFlow_Transactions_API>("trans
     .WaitFor(transactionsDb)
     .WaitFor(rabbitmq);
 
-var consolidation = builder.AddProject<Projects.CashFlow_Consolidation_API>("consolidation")
+var consolidation = builder.AddProject<CashFlow_Consolidation_API>("consolidation")
     .WithReference(consolidationDb)
     .WithReference(rabbitmq)
     .WithEnvironment("Gateway__Secret", gatewaySecret)
@@ -71,7 +71,7 @@ if (!skipDevResources)
 }
 
 // Gateway
-var gateway = builder.AddProject<Projects.CashFlow_Gateway>("gateway")
+var gateway = builder.AddProject<CashFlow_Gateway>("gateway")
     .WithReference(identity)
     .WithReference(transactions)
     .WithReference(consolidation)

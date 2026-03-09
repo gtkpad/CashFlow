@@ -2,14 +2,11 @@ namespace CashFlow.Domain.SharedKernel;
 
 public sealed record Money : IValueObject
 {
-    public decimal Amount { get; }
-    public string Currency { get; }
-
     /// <summary>
-    /// Creates a Money value object. Throws on invalid input because Value Objects
-    /// follow the always-valid pattern (DDD guard clauses). Invalid construction is
-    /// a programming error, not a user input error — the API boundary (GlobalExceptionHandler)
-    /// translates these into HTTP 400 responses.
+    ///     Creates a Money value object. Throws on invalid input because Value Objects
+    ///     follow the always-valid pattern (DDD guard clauses). Invalid construction is
+    ///     a programming error, not a user input error — the API boundary (GlobalExceptionHandler)
+    ///     translates these into HTTP 400 responses.
     /// </summary>
     public Money(decimal amount, string currency = "BRL")
     {
@@ -22,6 +19,9 @@ public sealed record Money : IValueObject
         Amount = amount;
         Currency = currency.ToUpperInvariant();
     }
+
+    public decimal Amount { get; }
+    public string Currency { get; }
 
     public static Money Zero => new(0m);
 

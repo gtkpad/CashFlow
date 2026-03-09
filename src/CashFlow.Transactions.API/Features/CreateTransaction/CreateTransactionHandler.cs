@@ -1,7 +1,6 @@
 using CashFlow.Domain.SharedKernel;
 using CashFlow.Domain.Transactions;
 using CashFlow.ServiceDefaults;
-using Microsoft.Extensions.Logging;
 
 namespace CashFlow.Transactions.API.Features.CreateTransaction;
 
@@ -33,7 +32,8 @@ public sealed class CreateTransactionHandler(
         metrics.RecordTransactionCreated(command.Type.ToString(), command.Currency);
         metrics.RecordTransactionAmount((double)command.Amount, command.Type.ToString(), command.Currency);
 
-        logger.LogInformation("Transaction {TransactionId} created for MerchantId {MerchantId}, Amount {Amount} {Currency}",
+        logger.LogInformation(
+            "Transaction {TransactionId} created for MerchantId {MerchantId}, Amount {Amount} {Currency}",
             transaction.Id.Value, merchantId, command.Amount, command.Currency);
 
         return Result.Success(new CreateTransactionResponse(

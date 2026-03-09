@@ -20,18 +20,25 @@ public static class DomainEventMapper
         CancellationToken cancellationToken)
     {
         if (!Publishers.TryGetValue(domainEvent.GetType(), out var publisher))
+        {
             throw new InvalidOperationException(
                 $"No integration event publisher found for domain event '{domainEvent.GetType().Name}'. " +
                 "Register a publisher in DomainEventMapper.");
+        }
+
         return publisher(domainEvent, publishEndpoint, cancellationToken);
     }
-
-    private record TransactionCreatedEvent(
-        Guid TransactionId, Guid MerchantId, DateOnly ReferenceDate,
-        string TransactionType, decimal Amount, string Currency) : ITransactionCreated;
 
     private static ITransactionCreated MapTransactionCreated(TransactionCreated e) =>
         new TransactionCreatedEvent(
             e.TransactionId.Value, e.MerchantId.Value, e.ReferenceDate,
             e.Type.ToString(), e.Value.Amount, e.Value.Currency);
+
+    private record TransactionCreatedEvent(
+        Guid TransactionId,
+        Guid MerchantId,
+        DateOnly ReferenceDate,
+        string TransactionType,
+        decimal Amount,
+        string Currency) : ITransactionCreated;
 }

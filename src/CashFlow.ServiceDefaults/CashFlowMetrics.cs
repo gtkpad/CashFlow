@@ -5,14 +5,14 @@ namespace CashFlow.ServiceDefaults;
 public sealed class CashFlowMetrics
 {
     public const string MeterName = "CashFlow";
-
-    private readonly Counter<long> _transactionsCreated;
-    private readonly Histogram<double> _transactionAmount;
+    private readonly Counter<long> _authFailures;
     private readonly Counter<long> _consolidationEventsProcessed;
     private readonly Histogram<double> _consolidationProcessingDuration;
-    private readonly Histogram<double> _eventualConsistency;
-    private readonly Counter<long> _authFailures;
     private readonly Counter<long> _dlqFaults;
+    private readonly Histogram<double> _eventualConsistency;
+    private readonly Histogram<double> _transactionAmount;
+
+    private readonly Counter<long> _transactionsCreated;
 
     public CashFlowMetrics(IMeterFactory meterFactory)
     {
@@ -67,15 +67,10 @@ public sealed class CashFlowMetrics
             new KeyValuePair<string, object?>("result", result));
     }
 
-    public void RecordConsolidationProcessingDuration(double durationMs)
-    {
+    public void RecordConsolidationProcessingDuration(double durationMs) =>
         _consolidationProcessingDuration.Record(durationMs);
-    }
 
-    public void RecordEventualConsistency(double consistencyMs)
-    {
-        _eventualConsistency.Record(consistencyMs);
-    }
+    public void RecordEventualConsistency(double consistencyMs) => _eventualConsistency.Record(consistencyMs);
 
     public void RecordAuthFailure(string reason)
     {

@@ -8,14 +8,8 @@ public interface IHasDomainEvents
 
 public abstract class Entity<TId> : IEquatable<Entity<TId>>, IHasDomainEvents where TId : notnull
 {
-    public TId Id { get; protected init; } = default!;
-
     private readonly List<IDomainEvent> _domainEvents = [];
-    public IReadOnlyList<IDomainEvent> DomainEvents => _domainEvents.AsReadOnly();
-
-    protected void Raise(IDomainEvent domainEvent) => _domainEvents.Add(domainEvent);
-
-    public void ClearDomainEvents() => _domainEvents.Clear();
+    public TId Id { get; protected init; } = default!;
 
     public bool Equals(Entity<TId>? other)
     {
@@ -25,6 +19,12 @@ public abstract class Entity<TId> : IEquatable<Entity<TId>>, IHasDomainEvents wh
             return true;
         return EqualityComparer<TId>.Default.Equals(Id, other.Id);
     }
+
+    public IReadOnlyList<IDomainEvent> DomainEvents => _domainEvents.AsReadOnly();
+
+    public void ClearDomainEvents() => _domainEvents.Clear();
+
+    protected void Raise(IDomainEvent domainEvent) => _domainEvents.Add(domainEvent);
 
     public override bool Equals(object? obj) => Equals(obj as Entity<TId>);
 

@@ -1,9 +1,13 @@
+using System.Security.Claims;
 using CashFlow.ServiceDefaults;
 
 namespace CashFlow.Gateway.Middleware;
 
-public sealed class AuthMiddleware(RequestDelegate next, IConfiguration configuration,
-    ILogger<AuthMiddleware> logger, CashFlowMetrics metrics)
+public sealed class AuthMiddleware(
+    RequestDelegate next,
+    IConfiguration configuration,
+    ILogger<AuthMiddleware> logger,
+    CashFlowMetrics metrics)
 {
     private static readonly string[] _publicPaths = ["/api/identity/"];
 
@@ -45,7 +49,7 @@ public sealed class AuthMiddleware(RequestDelegate next, IConfiguration configur
         }
 
         var userId = context.User.FindFirst("sub")?.Value
-                  ?? context.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                     ?? context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
         if (userId is null)
         {

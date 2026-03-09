@@ -10,7 +10,7 @@ internal static class DatabaseExtensions
         builder.Services.AddDbContext<TransactionsDbContext>(options =>
             options.UseNpgsql(
                 builder.Configuration.GetConnectionString("transactions-db"),
-                npgsql => npgsql.EnableRetryOnFailure(maxRetryCount: 3)));
+                npgsql => npgsql.EnableRetryOnFailure(3)));
 
         builder.Services.AddHealthChecks()
             .AddDbContextCheck<TransactionsDbContext>("transactions-db", tags: ["ready"]);

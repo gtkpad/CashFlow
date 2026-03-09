@@ -1,6 +1,5 @@
 using CashFlow.Domain.Transactions;
 using CashFlow.Transactions.API.Features.CreateTransaction;
-using FluentAssertions;
 using FluentValidation.TestHelper;
 
 namespace CashFlow.UnitTests.Transactions;
@@ -10,12 +9,12 @@ public class CreateTransactionValidatorTests
     private readonly CreateTransactionValidator _validator = new();
 
     private static CreateTransactionCommand ValidCommand() => new(
-        ReferenceDate: DateOnly.FromDateTime(DateTime.Today),
-        Type: TransactionType.Credit,
-        Amount: 100.00m,
-        Currency: "BRL",
-        Description: "Valid transaction",
-        CreatedBy: "user@test.com");
+        DateOnly.FromDateTime(DateTime.Today),
+        TransactionType.Credit,
+        100.00m,
+        "BRL",
+        "Valid transaction",
+        "user@test.com");
 
     [Fact]
     public void Validate_ValidCommand_ShouldPass()

@@ -3,13 +3,14 @@ using System.Security.Claims;
 using System.Text;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 
 namespace CashFlow.Identity.API.Auth;
 
 internal sealed class JwtTokenProtector(
-    string signingKey, string issuer, string audience,
+    string signingKey,
+    string issuer,
+    string audience,
     ILogger<JwtTokenProtector> logger)
     : ISecureDataFormat<AuthenticationTicket>
 {

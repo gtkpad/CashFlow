@@ -2,9 +2,6 @@ namespace CashFlow.Domain.SharedKernel;
 
 public sealed class CurrencyMismatchException : InvalidOperationException
 {
-    public string CurrencyA { get; }
-    public string CurrencyB { get; }
-
     public CurrencyMismatchException(string currencyA, string currencyB)
         : base($"Cannot perform operation on different currencies: {currencyA} and {currencyB}")
     {
@@ -12,7 +9,7 @@ public sealed class CurrencyMismatchException : InvalidOperationException
         CurrencyB = currencyB;
     }
 
-    public CurrencyMismatchException() : base()
+    public CurrencyMismatchException()
     {
         CurrencyA = string.Empty;
         CurrencyB = string.Empty;
@@ -29,4 +26,7 @@ public sealed class CurrencyMismatchException : InvalidOperationException
         CurrencyA = string.Empty;
         CurrencyB = string.Empty;
     }
+
+    public string CurrencyA { get; }
+    public string CurrencyB { get; }
 }

@@ -8,6 +8,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Roslynator.Analyzers" />
+        <PackageReference Include="Roslynator.Analyzers"/>
     </ItemGroup>
 </Project>

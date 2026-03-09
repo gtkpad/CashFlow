@@ -12,8 +12,8 @@ namespace CashFlow.UnitTests.Consolidation;
 
 public class TransactionFaultConsumerTests
 {
-    private readonly CashFlowMetrics _metrics;
     private readonly TransactionFaultConsumer _consumer;
+    private readonly CashFlowMetrics _metrics;
 
     public TransactionFaultConsumerTests()
     {

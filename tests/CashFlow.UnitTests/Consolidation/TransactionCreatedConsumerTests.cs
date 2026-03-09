@@ -17,16 +17,16 @@ namespace CashFlow.UnitTests.Consolidation;
 
 public class TransactionCreatedConsumerTests : IDisposable
 {
-    private readonly ConsolidationDbContext _db;
-    private readonly IDailySummaryRepository _repo;
     private readonly IOutputCacheStore _cacheStore;
-    private readonly CashFlowMetrics _metrics;
     private readonly TransactionCreatedConsumer _consumer;
+    private readonly ConsolidationDbContext _db;
+    private readonly CashFlowMetrics _metrics;
+    private readonly IDailySummaryRepository _repo;
 
     public TransactionCreatedConsumerTests()
     {
         var options = new DbContextOptionsBuilder<ConsolidationDbContext>()
-            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
         _db = new ConsolidationDbContext(options);
         _repo = new DailySummaryRepository(_db);
@@ -41,6 +41,8 @@ public class TransactionCreatedConsumerTests : IDisposable
             _repo, _db, _cacheStore,
             NullLogger<TransactionCreatedConsumer>.Instance, _metrics);
     }
+
+    public void Dispose() => _db.Dispose();
 
     [Fact]
     public async Task Consume_ZeroAmount_ThrowsArgumentException()
@@ -78,10 +80,10 @@ public class TransactionCreatedConsumerTests : IDisposable
         var merchantId = Guid.NewGuid();
         var date = new DateOnly(2025, 6, 15);
 
-        var credit = CreateMessage(merchantId: merchantId, date: date, amount: 200m, type: "Credit");
+        var credit = CreateMessage(merchantId, date, 200m, "Credit");
         await _consumer.Consume(CreateConsumeContext(credit));
 
-        var debit = CreateMessage(merchantId: merchantId, date: date, amount: 50m, type: "Debit");
+        var debit = CreateMessage(merchantId, date, 50m, "Debit");
         await _consumer.Consume(CreateConsumeContext(debit));
 
         var summary = await _db.DailySummaries
@@ -127,10 +129,5 @@ public class TransactionCreatedConsumerTests : IDisposable
         context.CancellationToken.Returns(CancellationToken.None);
         context.SentTime.Returns((DateTime?)null);
         return context;
-    }
-
-    public void Dispose()
-    {
-        _db.Dispose();
     }
 }

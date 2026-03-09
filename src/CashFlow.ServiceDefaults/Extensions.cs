@@ -6,7 +6,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.ServiceDiscovery;
 using OpenTelemetry;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Trace;
@@ -49,7 +48,8 @@ public static class Extensions
         return builder;
     }
 
-    public static TBuilder ConfigureOpenTelemetry<TBuilder>(this TBuilder builder) where TBuilder : IHostApplicationBuilder
+    public static TBuilder ConfigureOpenTelemetry<TBuilder>(this TBuilder builder)
+        where TBuilder : IHostApplicationBuilder
     {
         builder.Logging.AddOpenTelemetry(logging =>
         {
@@ -85,39 +85,41 @@ public static class Extensions
         return builder;
     }
 
-    private static TBuilder AddOpenTelemetryExporters<TBuilder>(this TBuilder builder) where TBuilder : IHostApplicationBuilder
+    private static TBuilder AddOpenTelemetryExporters<TBuilder>(this TBuilder builder)
+        where TBuilder : IHostApplicationBuilder
     {
         var useOtlpExporter = !string.IsNullOrWhiteSpace(builder.Configuration["OTEL_EXPORTER_OTLP_ENDPOINT"]);
 
         if (useOtlpExporter)
-        {
             builder.Services.AddOpenTelemetry().UseOtlpExporter();
-        }
 
         // Aspire WithReference injeta como ConnectionStrings__appinsights;
         // deploy direto (ou legacy) pode usar APPLICATIONINSIGHTS_CONNECTION_STRING.
         var appInsightsConnectionString = builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"]
-            ?? builder.Configuration.GetConnectionString("appinsights");
+                                          ?? builder.Configuration.GetConnectionString("appinsights");
 
         if (!string.IsNullOrEmpty(appInsightsConnectionString))
         {
             var samplingRatio = double.TryParse(
                 builder.Configuration["OTEL_TRACES_SAMPLER_ARG"], out var ratio)
                 ? (float)ratio
-                : builder.Environment.IsDevelopment() ? 1.0f : 0.1f;
+                : builder.Environment.IsDevelopment()
+                    ? 1.0f
+                    : 0.1f;
 
             builder.Services.AddOpenTelemetry()
-               .UseAzureMonitor(o =>
-               {
-                   o.ConnectionString = appInsightsConnectionString;
-                   o.SamplingRatio = samplingRatio;
-               });
+                .UseAzureMonitor(o =>
+                {
+                    o.ConnectionString = appInsightsConnectionString;
+                    o.SamplingRatio = samplingRatio;
+                });
         }
 
         return builder;
     }
 
-    private static TBuilder AddProductionLogFilters<TBuilder>(this TBuilder builder) where TBuilder : IHostApplicationBuilder
+    private static TBuilder AddProductionLogFilters<TBuilder>(this TBuilder builder)
+        where TBuilder : IHostApplicationBuilder
     {
         if (!builder.Environment.IsDevelopment())
         {
@@ -130,7 +132,8 @@ public static class Extensions
         return builder;
     }
 
-    public static TBuilder AddDefaultHealthChecks<TBuilder>(this TBuilder builder) where TBuilder : IHostApplicationBuilder
+    public static TBuilder AddDefaultHealthChecks<TBuilder>(this TBuilder builder)
+        where TBuilder : IHostApplicationBuilder
     {
         builder.Services.AddHealthChecks()
             .AddCheck("self", () => HealthCheckResult.Healthy(), ["live"]);
@@ -169,7 +172,7 @@ public static class Extensions
 
     public static WebApplication UseGatewaySecret(this WebApplication app)
     {
-        app.UseMiddleware<CashFlow.ServiceDefaults.GatewaySecretMiddleware>();
+        app.UseMiddleware<GatewaySecretMiddleware>();
         return app;
     }
 }

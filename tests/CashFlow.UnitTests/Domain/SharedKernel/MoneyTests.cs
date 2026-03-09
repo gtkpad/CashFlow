@@ -34,7 +34,7 @@ public class MoneyTests
     [Fact]
     public void Add_DifferentCurrencies_ShouldThrow()
     {
-        var brl = new Money(100m, "BRL");
+        var brl = new Money(100m);
         var usd = new Money(50m, "USD");
         var act = () => brl + usd;
         act.Should().Throw<InvalidOperationException>()
@@ -44,7 +44,7 @@ public class MoneyTests
     [Fact]
     public void Subtract_DifferentCurrencies_ShouldThrow()
     {
-        var brl = new Money(100m, "BRL");
+        var brl = new Money(100m);
         var usd = new Money(50m, "USD");
         var act = () => brl - usd;
         act.Should().Throw<InvalidOperationException>()

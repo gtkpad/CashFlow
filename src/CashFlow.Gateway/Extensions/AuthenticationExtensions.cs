@@ -11,10 +11,12 @@ internal static class AuthenticationExtensions
         this WebApplicationBuilder builder)
     {
         var jwtSigningKey = builder.Configuration["Jwt:SigningKey"]
-            ?? throw new InvalidOperationException("Jwt:SigningKey configuration is required");
+                            ?? throw new InvalidOperationException("Jwt:SigningKey configuration is required");
         if (Encoding.UTF8.GetByteCount(jwtSigningKey) < 32)
+        {
             throw new InvalidOperationException(
                 "Jwt:SigningKey must be at least 32 bytes (256 bits) for HMAC-SHA256.");
+        }
 
         var validAudiences = builder.Configuration
             .GetSection("Identity:ValidAudiences").Get<string[]>() ?? ["cashflow-api"];
@@ -32,7 +34,7 @@ internal static class AuthenticationExtensions
                     ValidIssuer = "cashflow-identity",
                     ValidateAudience = validAudiences is { Length: > 0 },
                     ValidAudiences = validAudiences,
-                    ValidateLifetime = true,
+                    ValidateLifetime = true
                 };
             });
 

@@ -1,3 +1,7 @@
+using CashFlow.Consolidation.API.Persistence;
+using CashFlow.Domain.SharedKernel;
+using CashFlow.ServiceDefaults;
+using CashFlow.Transactions.API.Persistence;
 using FluentAssertions;
 using NetArchTest.Rules;
 
@@ -8,7 +12,7 @@ public class DependencyTests
     [Fact]
     public void Domain_ShouldNotDependOn_TransactionsApi()
     {
-        var domainAssembly = typeof(CashFlow.Domain.SharedKernel.Money).Assembly;
+        var domainAssembly = typeof(Money).Assembly;
 
         var result = Types.InAssembly(domainAssembly)
             .ShouldNot()
@@ -21,7 +25,7 @@ public class DependencyTests
     [Fact]
     public void Domain_ShouldNotDependOn_ConsolidationApi()
     {
-        var domainAssembly = typeof(CashFlow.Domain.SharedKernel.Money).Assembly;
+        var domainAssembly = typeof(Money).Assembly;
 
         var result = Types.InAssembly(domainAssembly)
             .ShouldNot()
@@ -34,7 +38,7 @@ public class DependencyTests
     [Fact]
     public void Domain_ShouldNotDependOn_IdentityApi()
     {
-        var domainAssembly = typeof(CashFlow.Domain.SharedKernel.Money).Assembly;
+        var domainAssembly = typeof(Money).Assembly;
 
         var result = Types.InAssembly(domainAssembly)
             .ShouldNot()
@@ -47,7 +51,7 @@ public class DependencyTests
     [Fact]
     public void TransactionsApi_ShouldNotDependOn_ConsolidationApi()
     {
-        var transactionsAssembly = typeof(CashFlow.Transactions.API.Persistence.TransactionsDbContext).Assembly;
+        var transactionsAssembly = typeof(TransactionsDbContext).Assembly;
 
         var result = Types.InAssembly(transactionsAssembly)
             .ShouldNot()
@@ -60,7 +64,7 @@ public class DependencyTests
     [Fact]
     public void ConsolidationApi_ShouldNotDependOn_TransactionsApi()
     {
-        var consolidationAssembly = typeof(CashFlow.Consolidation.API.Persistence.ConsolidationDbContext).Assembly;
+        var consolidationAssembly = typeof(ConsolidationDbContext).Assembly;
 
         var result = Types.InAssembly(consolidationAssembly)
             .ShouldNot()
@@ -73,7 +77,7 @@ public class DependencyTests
     [Fact]
     public void TransactionsCreateFeature_ShouldNotDependOn_GetFeature()
     {
-        var assembly = typeof(CashFlow.Transactions.API.Persistence.TransactionsDbContext).Assembly;
+        var assembly = typeof(TransactionsDbContext).Assembly;
 
         var result = Types.InAssembly(assembly)
             .That()
@@ -88,7 +92,7 @@ public class DependencyTests
     [Fact]
     public void ConsolidationConsumerFeature_ShouldNotDependOn_QueryFeature()
     {
-        var assembly = typeof(CashFlow.Consolidation.API.Persistence.ConsolidationDbContext).Assembly;
+        var assembly = typeof(ConsolidationDbContext).Assembly;
 
         var result = Types.InAssembly(assembly)
             .That()
@@ -103,7 +107,7 @@ public class DependencyTests
     [Fact]
     public void Consumers_ShouldNotDependOn_Endpoints()
     {
-        var transactionsAssembly = typeof(CashFlow.Transactions.API.Persistence.TransactionsDbContext).Assembly;
+        var transactionsAssembly = typeof(TransactionsDbContext).Assembly;
 
         var result = Types.InAssembly(transactionsAssembly)
             .That()
@@ -118,7 +122,7 @@ public class DependencyTests
     [Fact]
     public void Handlers_ShouldNotDependOn_MassTransitConsumers()
     {
-        var transactionsAssembly = typeof(CashFlow.Transactions.API.Persistence.TransactionsDbContext).Assembly;
+        var transactionsAssembly = typeof(TransactionsDbContext).Assembly;
 
         var result = Types.InAssembly(transactionsAssembly)
             .That()
@@ -133,19 +137,22 @@ public class DependencyTests
     [Fact]
     public void ServiceDefaults_ShouldNotDependOn_AnyApiAssembly()
     {
-        var assembly = typeof(CashFlow.ServiceDefaults.GlobalExceptionHandler).Assembly;
-        foreach (var ns in new[] { "CashFlow.Transactions.API", "CashFlow.Consolidation.API",
-                                    "CashFlow.Identity.API", "CashFlow.Gateway" })
+        var assembly = typeof(GlobalExceptionHandler).Assembly;
+        foreach (var ns in new[]
+                 {
+                     "CashFlow.Transactions.API", "CashFlow.Consolidation.API",
+                     "CashFlow.Identity.API", "CashFlow.Gateway"
+                 })
         {
             Types.InAssembly(assembly).ShouldNot().HaveDependencyOn(ns).GetResult()
-                .IsSuccessful.Should().BeTrue(because: $"ServiceDefaults must not depend on {ns}");
+                .IsSuccessful.Should().BeTrue($"ServiceDefaults must not depend on {ns}");
         }
     }
 
     [Fact]
     public void Validators_ShouldHaveValidatorSuffix()
     {
-        var assembly = typeof(CashFlow.Transactions.API.Persistence.TransactionsDbContext).Assembly;
+        var assembly = typeof(TransactionsDbContext).Assembly;
         Types.InAssembly(assembly)
             .That().HaveNameEndingWith("Validator")
             .Should().ResideInNamespaceContaining("Features")
@@ -156,10 +163,10 @@ public class DependencyTests
     public void Handlers_ShouldResideInFeaturesNamespace()
     {
         foreach (var assembly in new[]
-        {
-            typeof(CashFlow.Transactions.API.Persistence.TransactionsDbContext).Assembly,
-            typeof(CashFlow.Consolidation.API.Persistence.ConsolidationDbContext).Assembly
-        })
+                 {
+                     typeof(TransactionsDbContext).Assembly,
+                     typeof(ConsolidationDbContext).Assembly
+                 })
         {
             Types.InAssembly(assembly)
                 .That().HaveNameEndingWith("Handler")
@@ -172,10 +179,10 @@ public class DependencyTests
     public void Consumers_ShouldResideInFeaturesNamespace()
     {
         foreach (var assembly in new[]
-        {
-            typeof(CashFlow.Transactions.API.Persistence.TransactionsDbContext).Assembly,
-            typeof(CashFlow.Consolidation.API.Persistence.ConsolidationDbContext).Assembly
-        })
+                 {
+                     typeof(TransactionsDbContext).Assembly,
+                     typeof(ConsolidationDbContext).Assembly
+                 })
         {
             Types.InAssembly(assembly)
                 .That().HaveNameEndingWith("Consumer")
@@ -188,10 +195,10 @@ public class DependencyTests
     public void Repositories_ShouldResideInPersistenceNamespace()
     {
         foreach (var assembly in new[]
-        {
-            typeof(CashFlow.Transactions.API.Persistence.TransactionsDbContext).Assembly,
-            typeof(CashFlow.Consolidation.API.Persistence.ConsolidationDbContext).Assembly
-        })
+                 {
+                     typeof(TransactionsDbContext).Assembly,
+                     typeof(ConsolidationDbContext).Assembly
+                 })
         {
             Types.InAssembly(assembly)
                 .That().HaveNameEndingWith("Repository")
@@ -204,10 +211,10 @@ public class DependencyTests
     public void Handlers_ShouldNotDependOn_DbContext()
     {
         foreach (var assembly in new[]
-        {
-            typeof(CashFlow.Transactions.API.Persistence.TransactionsDbContext).Assembly,
-            typeof(CashFlow.Consolidation.API.Persistence.ConsolidationDbContext).Assembly
-        })
+                 {
+                     typeof(TransactionsDbContext).Assembly,
+                     typeof(ConsolidationDbContext).Assembly
+                 })
         {
             var result = Types.InAssembly(assembly)
                 .That().ResideInNamespaceContaining("Features")
@@ -216,7 +223,7 @@ public class DependencyTests
                 .GetResult();
 
             result.IsSuccessful.Should().BeTrue(
-                because: $"Handlers in {assembly.GetName().Name} must not depend on DbContext — use repositories");
+                $"Handlers in {assembly.GetName().Name} must not depend on DbContext — use repositories");
         }
     }
 }

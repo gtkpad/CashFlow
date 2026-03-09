@@ -3,6 +3,7 @@ using CashFlow.Consolidation.API.Persistence;
 using CashFlow.Domain.Consolidation;
 using CashFlow.Domain.IntegrationEvents;
 using CashFlow.Domain.SharedKernel;
+using CashFlow.ServiceDefaults;
 using FluentAssertions;
 using MassTransit;
 using MassTransit.Testing;
@@ -10,7 +11,6 @@ using Microsoft.AspNetCore.OutputCaching;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using NSubstitute;
-using CashFlow.ServiceDefaults;
 
 namespace CashFlow.IntegrationTests.Consolidation;
 
@@ -20,8 +20,8 @@ namespace CashFlow.IntegrationTests.Consolidation;
 [Collection("IntegrationTests")]
 public class TransactionCreatedConsumerTests : IAsyncLifetime
 {
-    private ServiceProvider _provider = null!;
     private ITestHarness _harness = null!;
+    private ServiceProvider _provider = null!;
 
     public async Task InitializeAsync()
     {
@@ -39,14 +39,17 @@ public class TransactionCreatedConsumerTests : IAsyncLifetime
 
         // Register consumer WITHOUT definition to avoid Outbox middleware
         // (InMemory DB doesn't support the transaction scope required by EF Outbox)
-        services.AddMassTransitTestHarness(cfg =>
-        {
-            cfg.AddConsumer<TransactionCreatedConsumer>();
-        });
+        services.AddMassTransitTestHarness(cfg => { cfg.AddConsumer<TransactionCreatedConsumer>(); });
 
         _provider = services.BuildServiceProvider();
         _harness = _provider.GetRequiredService<ITestHarness>();
         await _harness.Start();
+    }
+
+    public async Task DisposeAsync()
+    {
+        await _harness.Stop();
+        await _provider.DisposeAsync();
     }
 
     [Fact]
@@ -117,7 +120,7 @@ public class TransactionCreatedConsumerTests : IAsyncLifetime
 
         // Wait for second message to be consumed
         (await _harness.Consumed.Any<ITransactionCreated>(x =>
-            x.Context.Message.MerchantId == merchantId && x.Context.Message.Amount == 50.00m))
+                x.Context.Message.MerchantId == merchantId && x.Context.Message.Amount == 50.00m))
             .Should().BeTrue();
 
         // Assert
@@ -151,11 +154,5 @@ public class TransactionCreatedConsumerTests : IAsyncLifetime
         (await _harness.Consumed.Any<ITransactionCreated>()).Should().BeTrue();
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
         (await _harness.Published.Any<Fault<ITransactionCreated>>(cts.Token)).Should().BeFalse();
-    }
-
-    public async Task DisposeAsync()
-    {
-        await _harness.Stop();
-        await _provider.DisposeAsync();
     }
 }

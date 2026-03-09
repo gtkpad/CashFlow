@@ -19,8 +19,10 @@ internal static class CorsExtensions
                 if (builder.Environment.IsDevelopment())
                     policy.AllowAnyHeader().AllowAnyMethod();
                 else
+                {
                     policy.WithHeaders("Authorization", "Content-Type", "Accept", "X-Trace-Id")
-                          .WithMethods("GET", "POST", "PUT", "DELETE", "OPTIONS");
+                        .WithMethods("GET", "POST", "PUT", "DELETE", "OPTIONS");
+                }
 
                 policy.AllowCredentials();
             });

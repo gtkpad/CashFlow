@@ -3,13 +3,13 @@ using CashFlow.Consolidation.API.Persistence;
 using CashFlow.Domain.Consolidation;
 using CashFlow.Domain.IntegrationEvents;
 using CashFlow.Domain.SharedKernel;
+using CashFlow.ServiceDefaults;
 using FluentAssertions;
 using MassTransit;
 using Microsoft.AspNetCore.OutputCaching;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using NSubstitute;
-using CashFlow.ServiceDefaults;
 using Testcontainers.PostgreSql;
 
 namespace CashFlow.IntegrationTests.Consolidation;
@@ -51,11 +51,17 @@ public class TransactionCreatedConcurrencyTests : IAsyncLifetime
         await db.Database.MigrateAsync();
     }
 
+    public async Task DisposeAsync()
+    {
+        await _provider.DisposeAsync();
+        await _postgres.DisposeAsync();
+    }
+
     /// <summary>
-    /// Validates that PostgreSQL xmin-based optimistic concurrency detects
-    /// conflicting updates on the same DailySummary row.
-    /// This mechanism is what makes the retry middleware in
-    /// TransactionCreatedConsumerDefinition meaningful.
+    ///     Validates that PostgreSQL xmin-based optimistic concurrency detects
+    ///     conflicting updates on the same DailySummary row.
+    ///     This mechanism is what makes the retry middleware in
+    ///     TransactionCreatedConsumerDefinition meaningful.
     /// </summary>
     [Fact]
     public async Task ConcurrentUpdate_ShouldDetectXminConflict()
@@ -91,10 +97,10 @@ public class TransactionCreatedConcurrencyTests : IAsyncLifetime
     }
 
     /// <summary>
-    /// Invokes the consumer directly for 10 sequential Credit transactions for the same
-    /// merchant and date. Bypassing the MassTransit test harness avoids LoopbackTransport
-    /// shared-state issues (the in-process singleton routing table is not cleaned up between
-    /// test harness instances). The final DailySummary must reflect all 10 transactions.
+    ///     Invokes the consumer directly for 10 sequential Credit transactions for the same
+    ///     merchant and date. Bypassing the MassTransit test harness avoids LoopbackTransport
+    ///     shared-state issues (the in-process singleton routing table is not cleaned up between
+    ///     test harness instances). The final DailySummary must reflect all 10 transactions.
     /// </summary>
     [Fact]
     public async Task ConcurrentMessages_SameMerchantAndDate_ShouldConsolidateCorrectly()
@@ -121,12 +127,6 @@ public class TransactionCreatedConcurrencyTests : IAsyncLifetime
         result.Should().NotBeNull();
         result!.TransactionCount.Should().Be(messageCount);
         result.TotalCredits.Amount.Should().Be(messageCount * amountPerMessage);
-    }
-
-    public async Task DisposeAsync()
-    {
-        await _provider.DisposeAsync();
-        await _postgres.DisposeAsync();
     }
 
     private static ConsumeContext<ITransactionCreated> BuildConsumeContext(

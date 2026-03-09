@@ -10,10 +10,7 @@ internal static class ApplicationExtensions
 {
     internal static WebApplicationBuilder AddApplication(this WebApplicationBuilder builder)
     {
-        builder.Services.AddCarter(configurator: c =>
-        {
-            c.WithModule<GetDailyBalanceEndpoint>();
-        });
+        builder.Services.AddCarter(configurator: c => { c.WithModule<GetDailyBalanceEndpoint>(); });
 
         builder.Services.AddSingleton(TimeProvider.System);
         builder.Services.AddOutputCache(options =>

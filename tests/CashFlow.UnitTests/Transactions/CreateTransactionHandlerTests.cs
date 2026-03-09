@@ -12,9 +12,9 @@ namespace CashFlow.UnitTests.Transactions;
 
 public class CreateTransactionHandlerTests
 {
+    private readonly CreateTransactionHandler _handler;
     private readonly ITransactionRepository _repository;
     private readonly IUnitOfWork _unitOfWork;
-    private readonly CreateTransactionHandler _handler;
 
     public CreateTransactionHandlerTests()
     {
@@ -37,12 +37,12 @@ public class CreateTransactionHandlerTests
         // Arrange
         var merchantId = Guid.NewGuid();
         var command = new CreateTransactionCommand(
-            ReferenceDate: DateOnly.FromDateTime(DateTime.Today),
-            Type: TransactionType.Credit,
-            Amount: 150.00m,
-            Currency: "BRL",
-            Description: "Sale #42",
-            CreatedBy: "user@test.com");
+            DateOnly.FromDateTime(DateTime.Today),
+            TransactionType.Credit,
+            150.00m,
+            "BRL",
+            "Sale #42",
+            "user@test.com");
 
         // Act
         var result = await _handler.HandleAsync(merchantId, command);
@@ -60,12 +60,12 @@ public class CreateTransactionHandlerTests
     {
         // Arrange
         var command = new CreateTransactionCommand(
-            ReferenceDate: DateOnly.FromDateTime(DateTime.Today),
-            Type: TransactionType.Credit,
-            Amount: 100.00m,
-            Currency: "BRL",
-            Description: "Sale #1",
-            CreatedBy: "user@test.com");
+            DateOnly.FromDateTime(DateTime.Today),
+            TransactionType.Credit,
+            100.00m,
+            "BRL",
+            "Sale #1",
+            "user@test.com");
 
         // Act
         var act = () => _handler.HandleAsync(Guid.Empty, command);
@@ -81,12 +81,12 @@ public class CreateTransactionHandlerTests
         // Arrange — zero amount triggers Result.Failure in Transaction.Create
         var merchantId = Guid.NewGuid();
         var command = new CreateTransactionCommand(
-            ReferenceDate: DateOnly.FromDateTime(DateTime.Today),
-            Type: TransactionType.Credit,
-            Amount: 0m,
-            Currency: "BRL",
-            Description: "Invalid transaction",
-            CreatedBy: "user@test.com");
+            DateOnly.FromDateTime(DateTime.Today),
+            TransactionType.Credit,
+            0m,
+            "BRL",
+            "Invalid transaction",
+            "user@test.com");
 
         // Act
         var result = await _handler.HandleAsync(merchantId, command);

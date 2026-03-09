@@ -1,12 +1,13 @@
 using CashFlow.Transactions.API.Persistence;
 using MassTransit;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
 using Respawn;
+using Respawn.Graph;
 using Testcontainers.PostgreSql;
 using Testcontainers.RabbitMq;
 
@@ -18,13 +19,6 @@ public class TransactionsApiFactory : WebApplicationFactory<TransactionsDbContex
 {
     private const string GatewaySecret = "test-secret";
 
-    public HttpClient CreateAuthenticatedClient()
-    {
-        var client = CreateClient();
-        client.DefaultRequestHeaders.Add("X-Gateway-Secret", GatewaySecret);
-        return client;
-    }
-
     private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder("postgres:16-alpine")
         .WithReuse(true)
         .Build();
@@ -32,19 +26,6 @@ public class TransactionsApiFactory : WebApplicationFactory<TransactionsDbContex
     private readonly RabbitMqContainer _rabbitmq = new RabbitMqBuilder("rabbitmq:3-alpine")
         .WithReuse(true)
         .Build();
-
-    protected override void ConfigureWebHost(IWebHostBuilder builder)
-    {
-        builder.UseSetting("ConnectionStrings:transactions-db", _postgres.GetConnectionString());
-        builder.UseSetting("ConnectionStrings:messaging", _rabbitmq.GetConnectionString());
-        builder.UseSetting("Gateway:Secret", "test-secret");
-        builder.UseEnvironment("Testing");
-
-        builder.ConfigureTestServices(services =>
-        {
-            services.AddMassTransitTestHarness();
-        });
-    }
 
     public async Task InitializeAsync()
     {
@@ -64,7 +45,7 @@ public class TransactionsApiFactory : WebApplicationFactory<TransactionsDbContex
         {
             DbAdapter = DbAdapter.Postgres,
             SchemasToInclude = ["public", "transactions"],
-            TablesToIgnore = [new Respawn.Graph.Table("__EFMigrationsHistory")]
+            TablesToIgnore = [new Table("__EFMigrationsHistory")]
         });
         await respawner.ResetAsync(conn);
     }
@@ -74,5 +55,22 @@ public class TransactionsApiFactory : WebApplicationFactory<TransactionsDbContex
         await _postgres.DisposeAsync();
         await _rabbitmq.DisposeAsync();
         await base.DisposeAsync();
+    }
+
+    public HttpClient CreateAuthenticatedClient()
+    {
+        var client = CreateClient();
+        client.DefaultRequestHeaders.Add("X-Gateway-Secret", GatewaySecret);
+        return client;
+    }
+
+    protected override void ConfigureWebHost(IWebHostBuilder builder)
+    {
+        builder.UseSetting("ConnectionStrings:transactions-db", _postgres.GetConnectionString());
+        builder.UseSetting("ConnectionStrings:messaging", _rabbitmq.GetConnectionString());
+        builder.UseSetting("Gateway:Secret", "test-secret");
+        builder.UseEnvironment("Testing");
+
+        builder.ConfigureTestServices(services => { services.AddMassTransitTestHarness(); });
     }
 }

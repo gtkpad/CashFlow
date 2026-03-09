@@ -4,6 +4,10 @@ namespace CashFlow.Domain.Transactions;
 
 public sealed class Transaction : Entity<TransactionId>, IAggregateRoot
 {
+    private Transaction()
+    {
+    }
+
     public MerchantId MerchantId { get; private init; }
     public DateOnly ReferenceDate { get; private init; }
     public TransactionType Type { get; private init; }
@@ -12,13 +16,11 @@ public sealed class Transaction : Entity<TransactionId>, IAggregateRoot
     public DateTimeOffset CreatedAt { get; private init; }
     public string? CreatedBy { get; private init; }
 
-    private Transaction() { }
-
     /// <summary>
-    /// Factory method using Result&lt;T&gt; because it is called from API handlers where
-    /// validation errors must be composed and returned as structured responses (not exceptions).
-    /// Contrast with Value Object constructors (throw) and domain methods called from
-    /// MassTransit consumers (throw with retry semantics).
+    ///     Factory method using Result&lt;T&gt; because it is called from API handlers where
+    ///     validation errors must be composed and returned as structured responses (not exceptions).
+    ///     Contrast with Value Object constructors (throw) and domain methods called from
+    ///     MassTransit consumers (throw with retry semantics).
     /// </summary>
     public static Result<Transaction> Create(
         MerchantId merchantId, DateOnly date, TransactionType type, Money value,

@@ -8,8 +8,8 @@ namespace CashFlow.UnitTests.Consolidation;
 
 public class GetDailyBalanceHandlerTests
 {
-    private readonly IDailySummaryRepository _repository;
     private readonly GetDailyBalanceHandler _handler;
+    private readonly IDailySummaryRepository _repository;
 
     public GetDailyBalanceHandlerTests()
     {
@@ -23,7 +23,7 @@ public class GetDailyBalanceHandlerTests
         var merchantId = new MerchantId(Guid.NewGuid());
         var date = new DateOnly(2025, 6, 15);
         var summary = DailySummary.CreateForDay(merchantId, date);
-        summary.ApplyTransaction(TransactionType.Credit, new Money(100m, "BRL"));
+        summary.ApplyTransaction(TransactionType.Credit, new Money(100m));
 
         _repository
             .GetByDateAndMerchant(merchantId, date, Arg.Any<CancellationToken>())

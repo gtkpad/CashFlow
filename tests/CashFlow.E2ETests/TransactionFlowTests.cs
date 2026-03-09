@@ -17,9 +17,9 @@ public class TransactionFlowTests(CashFlowAppFixture fixture)
     };
 
     /// <summary>
-    /// Full E2E flow through the Gateway: register + login, create a credit transaction,
-    /// wait for the event to flow through RabbitMQ to the Consolidation consumer,
-    /// then verify the daily balance reflects the credit.
+    ///     Full E2E flow through the Gateway: register + login, create a credit transaction,
+    ///     wait for the event to flow through RabbitMQ to the Consolidation consumer,
+    ///     then verify the daily balance reflects the credit.
     /// </summary>
     [Fact]
     public async Task CreateTransaction_ThenGetConsolidation_ShouldReflectBalance()
@@ -46,14 +46,14 @@ public class TransactionFlowTests(CashFlowAppFixture fixture)
 
         // Poll for eventual consistency instead of fixed delay
         var balance = await EventualConsistencyHelper.WaitForConditionAsync(
-            action: async () =>
+            async () =>
             {
                 var resp = await client.GetAsync($"/api/v1/consolidation/{today:yyyy-MM-dd}");
                 if (!resp.IsSuccessStatusCode)
                     return null;
                 return await resp.Content.ReadFromJsonAsync<DailyBalanceResponse>(JsonOptions);
             },
-            predicate: b => b is not null && b.TransactionCount >= 1);
+            b => b is not null && b.TransactionCount >= 1);
 
         balance.Should().NotBeNull();
         balance!.TotalCredits.Should().Be(250.00m);
@@ -62,8 +62,8 @@ public class TransactionFlowTests(CashFlowAppFixture fixture)
     }
 
     /// <summary>
-    /// Creates both a credit and a debit transaction through the Gateway,
-    /// then verifies the consolidated daily balance reflects the net result.
+    ///     Creates both a credit and a debit transaction through the Gateway,
+    ///     then verifies the consolidated daily balance reflects the net result.
     /// </summary>
     [Fact]
     public async Task CreateCreditAndDebit_ShouldReflectNetBalance()
@@ -102,14 +102,14 @@ public class TransactionFlowTests(CashFlowAppFixture fixture)
 
         // Poll for eventual consistency instead of fixed delay
         var balance = await EventualConsistencyHelper.WaitForConditionAsync(
-            action: async () =>
+            async () =>
             {
                 var resp = await client.GetAsync($"/api/v1/consolidation/{today:yyyy-MM-dd}");
                 if (!resp.IsSuccessStatusCode)
                     return null;
                 return await resp.Content.ReadFromJsonAsync<DailyBalanceResponse>(JsonOptions);
             },
-            predicate: b => b is not null && b.TransactionCount >= 2);
+            b => b is not null && b.TransactionCount >= 2);
 
         balance.Should().NotBeNull();
         balance!.TotalCredits.Should().Be(1000.00m);
@@ -119,8 +119,8 @@ public class TransactionFlowTests(CashFlowAppFixture fixture)
     }
 
     /// <summary>
-    /// Verifies that the Gateway rejects unauthenticated requests
-    /// to protected endpoints with a 401 Unauthorized response.
+    ///     Verifies that the Gateway rejects unauthenticated requests
+    ///     to protected endpoints with a 401 Unauthorized response.
     /// </summary>
     [Fact]
     public async Task Gateway_UnauthenticatedRequest_ShouldReturn401()
@@ -137,8 +137,8 @@ public class TransactionFlowTests(CashFlowAppFixture fixture)
     }
 
     /// <summary>
-    /// Verifies that the Gateway allows unauthenticated access
-    /// to the identity endpoints (public paths).
+    ///     Verifies that the Gateway allows unauthenticated access
+    ///     to the identity endpoints (public paths).
     /// </summary>
     [Fact]
     public async Task Gateway_IdentityEndpoints_ShouldBePublic()
@@ -159,9 +159,9 @@ public class TransactionFlowTests(CashFlowAppFixture fixture)
     }
 
     /// <summary>
-    /// Verifies fault isolation (NFR-1): when consolidation is unavailable,
-    /// transactions should still be accepted. The Outbox pattern ensures
-    /// events are delivered when consolidation recovers.
+    ///     Verifies fault isolation (NFR-1): when consolidation is unavailable,
+    ///     transactions should still be accepted. The Outbox pattern ensures
+    ///     events are delivered when consolidation recovers.
     /// </summary>
     [Fact]
     public async Task ConsolidationDown_TransactionsShouldStillWork()
@@ -201,8 +201,8 @@ public class TransactionFlowTests(CashFlowAppFixture fixture)
     }
 
     /// <summary>
-    /// Verifies multi-tenant isolation: Merchant A should not see
-    /// data from Merchant B in the consolidated daily balance.
+    ///     Verifies multi-tenant isolation: Merchant A should not see
+    ///     data from Merchant B in the consolidated daily balance.
     /// </summary>
     [Fact]
     public async Task MerchantA_ShouldNotSeeDataFromMerchantB()
@@ -246,14 +246,14 @@ public class TransactionFlowTests(CashFlowAppFixture fixture)
 
         // Wait for Merchant A's consolidation
         var balanceA = await EventualConsistencyHelper.WaitForConditionAsync(
-            action: async () =>
+            async () =>
             {
                 var resp = await clientA.GetAsync($"/api/v1/consolidation/{today:yyyy-MM-dd}");
                 if (!resp.IsSuccessStatusCode)
                     return null;
                 return await resp.Content.ReadFromJsonAsync<DailyBalanceResponse>(JsonOptions);
             },
-            predicate: b => b is not null && b.TransactionCount >= 1);
+            b => b is not null && b.TransactionCount >= 1);
 
         // Assert — Merchant A should only see their own 500, not B's 999
         balanceA.Should().NotBeNull();
@@ -262,14 +262,14 @@ public class TransactionFlowTests(CashFlowAppFixture fixture)
 
         // Wait for Merchant B's consolidation
         var balanceB = await EventualConsistencyHelper.WaitForConditionAsync(
-            action: async () =>
+            async () =>
             {
                 var resp = await clientB.GetAsync($"/api/v1/consolidation/{today:yyyy-MM-dd}");
                 if (!resp.IsSuccessStatusCode)
                     return null;
                 return await resp.Content.ReadFromJsonAsync<DailyBalanceResponse>(JsonOptions);
             },
-            predicate: b => b is not null && b.TransactionCount >= 1);
+            b => b is not null && b.TransactionCount >= 1);
 
         // Assert — Merchant B should only see their own 999, not A's 500
         balanceB.Should().NotBeNull();

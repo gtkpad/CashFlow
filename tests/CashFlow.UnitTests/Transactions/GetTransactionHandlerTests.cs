@@ -8,9 +8,9 @@ namespace CashFlow.UnitTests.Transactions;
 
 public class GetTransactionHandlerTests
 {
-    private readonly ITransactionRepository _repository;
     private readonly GetTransactionHandler _handler;
     private readonly Guid _merchantId = Guid.NewGuid();
+    private readonly ITransactionRepository _repository;
 
     public GetTransactionHandlerTests()
     {

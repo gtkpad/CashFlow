@@ -52,10 +52,10 @@ public sealed class GlobalExceptionHandler(
 
     private static bool IsDbConcurrencyException(Exception exception) =>
         exception.GetType().FullName ==
-            "Microsoft.EntityFrameworkCore.DbUpdateConcurrencyException";
+        "Microsoft.EntityFrameworkCore.DbUpdateConcurrencyException";
 
     private static bool IsDbDuplicateKeyException(Exception exception) =>
         exception.GetType().FullName ==
-            "Microsoft.EntityFrameworkCore.DbUpdateException"
+        "Microsoft.EntityFrameworkCore.DbUpdateException"
         && exception.InnerException is PostgresException { SqlState: "23505" };
 }

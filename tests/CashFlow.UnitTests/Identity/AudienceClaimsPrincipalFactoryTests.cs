@@ -1,9 +1,7 @@
-using System.Security.Claims;
 using CashFlow.Identity.API;
 using FluentAssertions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NSubstitute;
 
@@ -50,7 +48,7 @@ public class AudienceClaimsPrincipalFactoryTests
     [Fact]
     public async Task GenerateClaimsAsync_WithoutAudienceConfigured_ShouldNotAddAudClaim()
     {
-        var factory = CreateFactory(audience: null);
+        var factory = CreateFactory(null);
         var user = new IdentityUser { UserName = "test@test.com", Id = Guid.NewGuid().ToString() };
 
         var principal = await factory.CreateAsync(user);

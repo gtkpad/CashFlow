@@ -18,7 +18,7 @@ public sealed class MerchantIdFilter : IEndpointFilter
             || !Guid.TryParse(userIdHeader, out var merchantId))
         {
             return Results.Problem(
-                detail: "Missing or invalid X-User-Id header.",
+                "Missing or invalid X-User-Id header.",
                 statusCode: StatusCodes.Status401Unauthorized,
                 title: "Unauthorized");
         }

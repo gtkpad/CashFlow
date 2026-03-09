@@ -89,7 +89,7 @@ public class DailySummaryTests
     public void ApplyTransaction_DifferentCurrency_ShouldThrow()
     {
         var summary = DailySummary.CreateForDay(_merchantId, _today);
-        summary.ApplyTransaction(TransactionType.Credit, new Money(100m, "BRL"));
+        summary.ApplyTransaction(TransactionType.Credit, new Money(100m));
 
         var act = () => summary.ApplyTransaction(TransactionType.Credit, new Money(50m, "USD"));
 

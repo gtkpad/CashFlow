@@ -6,8 +6,8 @@ POST {{baseUrl}}/register
 Content-Type: application/json
 
 {
-  "email": "{{email}}",
-  "password": "{{password}}"
+    "email": "{{email}}",
+    "password": "{{password}}"
 }
 
 ### Login
@@ -15,8 +15,8 @@ POST {{baseUrl}}/login
 Content-Type: application/json
 
 {
-  "email": "{{email}}",
-  "password": "{{password}}"
+    "email": "{{email}}",
+    "password": "{{password}}"
 }
 
 ### Login (use cookies instead of bearer tokens)
@@ -24,8 +24,8 @@ POST {{baseUrl}}/login?useCookies=true
 Content-Type: application/json
 
 {
-  "email": "{{email}}",
-  "password": "{{password}}"
+    "email": "{{email}}",
+    "password": "{{password}}"
 }
 
 ### Refresh token
@@ -34,7 +34,7 @@ POST {{baseUrl}}/refresh
 Content-Type: application/json
 
 {
-  "refreshToken": "REPLACE_WITH_REFRESH_TOKEN"
+    "refreshToken": "REPLACE_WITH_REFRESH_TOKEN"
 }
 
 ### Get user info (requires authentication)

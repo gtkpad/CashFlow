@@ -22,7 +22,7 @@ public sealed class TransactionCreatedConsumer(
         var startTimestamp = Stopwatch.GetTimestamp();
         var evt = context.Message;
         var merchantId = new MerchantId(evt.MerchantId);
-        if (!Enum.TryParse<TransactionType>(evt.TransactionType, ignoreCase: true, out var type))
+        if (!Enum.TryParse<TransactionType>(evt.TransactionType, true, out var type))
             throw new InvalidOperationException($"Unknown TransactionType: '{evt.TransactionType}'");
 
         logger.LogInformation(
@@ -76,9 +76,8 @@ public sealed class TransactionCreatedConsumerDefinition
         // Outermost -> Innermost: CircuitBreaker -> Retry -> Outbox
         var partition = endpointConfigurator.CreatePartitioner(8);
 
-        consumerConfigurator.Message<ITransactionCreated>(
-            m => m.UsePartitioner(partition,
-                x => $"{x.Message.MerchantId}:{x.Message.ReferenceDate:yyyy-MM-dd}"));
+        consumerConfigurator.Message<ITransactionCreated>(m => m.UsePartitioner(partition,
+            x => $"{x.Message.MerchantId}:{x.Message.ReferenceDate:yyyy-MM-dd}"));
 
         endpointConfigurator.UseCircuitBreaker(cb =>
         {

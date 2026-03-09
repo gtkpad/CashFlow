@@ -2,7 +2,6 @@ using CashFlow.Consolidation.API.Features.GetDailyBalance;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.OutputCaching;
-using Microsoft.Extensions.Primitives;
 
 namespace CashFlow.UnitTests.Consolidation;
 
@@ -27,7 +26,7 @@ public class DailyBalanceCachePolicyTests
     public async Task CacheRequestAsync_PastDate_ShouldSetOneHourExpiration()
     {
         var pastDate = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-1).ToString("yyyy-MM-dd");
-        var context = CreateContext(date: pastDate);
+        var context = CreateContext(pastDate);
 
         await _policy.CacheRequestAsync(context, CancellationToken.None);
 
@@ -38,7 +37,7 @@ public class DailyBalanceCachePolicyTests
     public async Task CacheRequestAsync_TodayDate_ShouldSetFiveSecondExpiration()
     {
         var today = DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd");
-        var context = CreateContext(date: today);
+        var context = CreateContext(today);
 
         await _policy.CacheRequestAsync(context, CancellationToken.None);
 
@@ -49,7 +48,7 @@ public class DailyBalanceCachePolicyTests
     public async Task CacheRequestAsync_FutureDate_ShouldSetFiveSecondExpiration()
     {
         var futureDate = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(1).ToString("yyyy-MM-dd");
-        var context = CreateContext(date: futureDate);
+        var context = CreateContext(futureDate);
 
         await _policy.CacheRequestAsync(context, CancellationToken.None);
 
@@ -59,7 +58,7 @@ public class DailyBalanceCachePolicyTests
     [Fact]
     public async Task CacheRequestAsync_ShouldEnableAllCacheFlags()
     {
-        var context = CreateContext(date: "2025-01-01");
+        var context = CreateContext("2025-01-01");
 
         await _policy.CacheRequestAsync(context, CancellationToken.None);
 
@@ -72,7 +71,7 @@ public class DailyBalanceCachePolicyTests
     [Fact]
     public async Task CacheRequestAsync_ShouldVaryByUserIdHeader()
     {
-        var context = CreateContext(date: "2025-01-01");
+        var context = CreateContext("2025-01-01");
 
         await _policy.CacheRequestAsync(context, CancellationToken.None);
 
@@ -84,7 +83,7 @@ public class DailyBalanceCachePolicyTests
     {
         var merchantId = Guid.NewGuid();
         var date = "2025-01-15";
-        var context = CreateContext(date: date, userId: merchantId.ToString());
+        var context = CreateContext(date, merchantId.ToString());
 
         await _policy.CacheRequestAsync(context, CancellationToken.None);
 
@@ -94,7 +93,7 @@ public class DailyBalanceCachePolicyTests
     [Fact]
     public async Task CacheRequestAsync_InvalidMerchantId_ShouldNotAddTag()
     {
-        var context = CreateContext(date: "2025-01-15", userId: "not-a-guid");
+        var context = CreateContext("2025-01-15", "not-a-guid");
 
         await _policy.CacheRequestAsync(context, CancellationToken.None);
 
@@ -104,7 +103,7 @@ public class DailyBalanceCachePolicyTests
     [Fact]
     public async Task ServeFromCacheAsync_ShouldCompleteSuccessfully()
     {
-        var context = CreateContext(date: "2025-01-01");
+        var context = CreateContext("2025-01-01");
 
         await _policy.ServeFromCacheAsync(context, CancellationToken.None);
 
@@ -114,7 +113,7 @@ public class DailyBalanceCachePolicyTests
     [Fact]
     public async Task ServeResponseAsync_ShouldCompleteSuccessfully()
     {
-        var context = CreateContext(date: "2025-01-01");
+        var context = CreateContext("2025-01-01");
 
         await _policy.ServeResponseAsync(context, CancellationToken.None);
 

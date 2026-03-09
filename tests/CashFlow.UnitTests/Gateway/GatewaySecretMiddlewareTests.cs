@@ -10,8 +10,8 @@ namespace CashFlow.UnitTests.Gateway;
 
 public class GatewaySecretMiddlewareTests
 {
-    private readonly RequestDelegate _next = Substitute.For<RequestDelegate>();
     private readonly ILogger<GatewaySecretMiddleware> _logger = Substitute.For<ILogger<GatewaySecretMiddleware>>();
+    private readonly RequestDelegate _next = Substitute.For<RequestDelegate>();
 
     private GatewaySecretMiddleware CreateMiddleware(
         string? gatewaySecret, string environmentName = "Production")
@@ -95,7 +95,7 @@ public class GatewaySecretMiddlewareTests
     [Fact]
     public async Task InvokeAsync_NoConfigInDevelopment_ShouldAllow()
     {
-        var middleware = CreateMiddleware(gatewaySecret: null, environmentName: "Development");
+        var middleware = CreateMiddleware(null, "Development");
         var context = new DefaultHttpContext();
         context.Request.Path = "/api/transactions";
 
@@ -107,7 +107,7 @@ public class GatewaySecretMiddlewareTests
     [Fact]
     public async Task InvokeAsync_NoConfigInProduction_ShouldReturn503()
     {
-        var middleware = CreateMiddleware(gatewaySecret: null, environmentName: "Production");
+        var middleware = CreateMiddleware(null, "Production");
         var context = new DefaultHttpContext();
         context.Request.Path = "/api/transactions";
 
