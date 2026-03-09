@@ -53,6 +53,7 @@ jobs:
           AZURE_GATEWAY_SECRET: ${{ secrets.AZURE_GATEWAY_SECRET }}
           AZURE_JWT_SIGNING_KEY: ${{ secrets.AZURE_JWT_SIGNING_KEY }}
           AZURE_MESSAGING_PASSWORD: ${{ secrets.AZURE_MESSAGING_PASSWORD }}
+          AZURE_MESSAGING_USERNAME: ${{ secrets.AZURE_MESSAGING_USERNAME }}
           ALERT_EMAIL_ADDRESS: ${{ vars.ALERT_EMAIL_ADDRESS }}
         run: |
           azd env new "$AZURE_ENV_NAME" --no-prompt || true
@@ -61,6 +62,7 @@ jobs:
           azd env set AZURE_GATEWAY_SECRET "$AZURE_GATEWAY_SECRET"
           azd env set AZURE_JWT_SIGNING_KEY "$AZURE_JWT_SIGNING_KEY"
           azd env set AZURE_MESSAGING_PASSWORD "$AZURE_MESSAGING_PASSWORD"
+          azd env set AZURE_MESSAGING_USERNAME "$AZURE_MESSAGING_USERNAME"
           VERSION=${GITHUB_SHA::8}
           azd env set OTEL_SERVICE_VERSION "$VERSION"
           azd env set ALERT_EMAIL_ADDRESS "$ALERT_EMAIL_ADDRESS"
