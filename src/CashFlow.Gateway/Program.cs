@@ -18,6 +18,9 @@ var validAudiences = builder.Configuration.GetSection("Identity:ValidAudiences")
 
 var jwtSigningKey = builder.Configuration["Jwt:SigningKey"]
     ?? throw new InvalidOperationException("Jwt:SigningKey configuration is required");
+if (Encoding.UTF8.GetByteCount(jwtSigningKey) < 32)
+    throw new InvalidOperationException(
+        "Jwt:SigningKey must be at least 32 bytes (256 bits) for HMAC-SHA256.");
 
 builder.Services.AddAuthentication("Bearer")
     .AddJwtBearer("Bearer", options =>
@@ -98,6 +101,7 @@ builder.Services.AddRateLimiter(options =>
 var app = builder.Build();
 
 app.UseProductionHttpsSecurity();
+app.UseGlobalExceptionHandling();
 app.MapDefaultEndpoints();
 
 app.UseResponseCompression();

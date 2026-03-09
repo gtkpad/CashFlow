@@ -248,6 +248,7 @@ FakesAssemblies/
 .claude/
 .serena/
 CLAUDE.md
+.idea/
 
 # HTTP Client private environment (contains secrets)
 http-client.private.env.json
