@@ -166,4 +166,10 @@ public static class Extensions
 
         return app;
     }
+
+    public static WebApplication UseGatewaySecret(this WebApplication app)
+    {
+        app.UseMiddleware<CashFlow.ServiceDefaults.GatewaySecretMiddleware>();
+        return app;
+    }
 }

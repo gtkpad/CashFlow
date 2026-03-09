@@ -67,6 +67,9 @@ namespace CashFlow.Transactions.API.Migrations
                     b.HasIndex("ReferenceDate")
                         .HasDatabaseName("ix_transaction_reference_date");
 
+                    b.HasIndex("MerchantId", "ReferenceDate")
+                        .HasDatabaseName("ix_transaction_merchant_id_reference_date");
+
                     b.ToTable("transaction", "transactions");
                 });
 
