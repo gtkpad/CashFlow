@@ -51,7 +51,6 @@ builder.Services.AddMassTransit(x =>
 builder.Services.AddCarter(configurator: c =>
 {
     c.WithModule<TransactionEndpoints>();
-    c.WithValidator<CreateTransactionValidator>();
 });
 builder.Services.AddValidatorsFromAssemblyContaining<CreateTransactionValidator>();
 builder.Services.AddScoped<DomainEventInterceptor>();

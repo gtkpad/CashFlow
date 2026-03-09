@@ -1,6 +1,7 @@
 using CashFlow.ServiceDefaults;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using Npgsql;
 
 namespace CashFlow.UnitTests.ServiceDefaults;
@@ -77,8 +78,4 @@ public class GlobalExceptionHandlerTests
         statusCode.Should().Be(StatusCodes.Status409Conflict);
         title.Should().Be("Duplicate Resource");
     }
-
-    // Nested classes whose GetType().Name matches what GlobalExceptionHandler checks
-    private class DbUpdateConcurrencyException(string message) : Exception(message);
-    private class DbUpdateException(string message, Exception inner) : Exception(message, inner);
 }
