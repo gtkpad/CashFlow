@@ -12,7 +12,8 @@ var skipDevResources = Environment.GetEnvironmentVariable("CASHFLOW_E2E_TESTING"
 // Não usar AddConnectionString aqui — gera parâmetro Bicep que conflita com o existente.
 // Em E2E/CI a variável não existe, os serviços tratam ausência graciosamente.
 
-// Infrastructure
+#region Infrastructure
+
 if (!skipDevResources)
     builder.AddAzureContainerAppEnvironment("env");
 
@@ -38,7 +39,10 @@ if (!skipDevResources)
     rabbitmq.WithManagementPlugin();
 }
 
-// Services
+#endregion
+
+#region Services
+
 var identity = builder.AddProject<CashFlow_Identity_API>("identity")
     .WithReference(identityDb)
     .WithEnvironment("Identity__Audience", "cashflow-api")
@@ -70,7 +74,10 @@ if (!skipDevResources)
     consolidation.WithHttpHealthCheck("/health");
 }
 
-// Gateway
+#endregion
+
+#region Gateway
+
 var gateway = builder.AddProject<CashFlow_Gateway>("gateway")
     .WithReference(identity)
     .WithReference(transactions)
@@ -94,5 +101,7 @@ else
     gateway.WaitFor(transactions);
     gateway.WaitFor(consolidation);
 }
+
+#endregion
 
 builder.Build().Run();

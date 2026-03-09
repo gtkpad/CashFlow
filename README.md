@@ -17,6 +17,8 @@ Sistema de controle de fluxo de caixa diário para comerciantes, com lançamento
 - [Requisitos Não-Funcionais](#requisitos-não-funcionais)
 - [Decisões Arquiteturais](#decisões-arquiteturais)
 - [Evoluções Futuras](#evoluções-futuras)
+- [Observabilidade](#observabilidade)
+- [CI/CD](#cicd)
 - [Documentação](#documentação)
 
 ---
@@ -437,6 +439,125 @@ O tempo para execução do desafio é limitado. Abaixo estão evoluções que ag
 | **Multi-tenancy Isolado (SaaS)** | Média | Múltiplos merchants com DB/schema por cliente |
 | **Multi-ambiente ACA** (staging + prod) | Baixa | Promoção via pipeline, canary deployments |
 | **Feature Flags** (Azure App Configuration) | Baixa | Dark launches, canary deployments |
+
+---
+
+## Observabilidade
+
+O CashFlow implementa os três pilares de observabilidade — traces, metrics e logs — sobre o SDK do OpenTelemetry, com exportação automática para o Aspire Dashboard em desenvolvimento e para o Azure Monitor/Application Insights em produção. A configuração centralizada está em `src/CashFlow.ServiceDefaults/Extensions.cs` e é aplicada identicamente a todos os quatro serviços via `AddServiceDefaults()`.
+
+### Sinais OpenTelemetry
+
+#### Traces
+
+| Fonte de instrumentação | O que é rastreado |
+|---|---|
+| `AspNetCore` | Requisições HTTP de entrada (exceto `/health` e `/alive`, filtradas explicitamente) |
+| `HttpClient` | Chamadas HTTP de saída entre serviços |
+| `EntityFrameworkCore` | Comandos SQL emitidos pelo EF Core |
+| `MassTransit` | Publicação e consumo de mensagens no RabbitMQ, incluindo retry e fault |
+| `{ApplicationName}` | Activity source próprio de cada serviço |
+
+#### Metrics
+
+| Fonte de instrumentação | O que é medido |
+|---|---|
+| `AspNetCore` | Throughput HTTP, latência de request, status codes |
+| `HttpClient` | Latência e erros de chamadas de saída |
+| `Runtime` | GC, thread pool, uso de memória do .NET runtime |
+| `MassTransit` | Fila de mensagens, taxa de consumo, faults |
+| `CashFlow` | Métricas de negócio customizadas — detalhadas abaixo |
+
+#### Logs
+
+Logs estruturados exportados via OpenTelemetry com `IncludeFormattedMessage = true` e `IncludeScopes = true`. Em produção, filtros suprimem `Information` das categorias `Microsoft.EntityFrameworkCore`, `Microsoft.AspNetCore.Hosting`, `Microsoft.AspNetCore.Routing` e `System.Net.Http.HttpClient` para reduzir volume sem perder sinais relevantes.
+
+---
+
+### Exportadores
+
+| Ambiente | Exportador | Condição de ativação |
+|---|---|---|
+| Desenvolvimento (Aspire) | OTLP | `OTEL_EXPORTER_OTLP_ENDPOINT` injetada automaticamente pelo Aspire |
+| Produção (Azure) | Azure Monitor SDK (`UseAzureMonitor`) | `APPLICATIONINSIGHTS_CONNECTION_STRING` ou connection string `appinsights` presente |
+| Ambos podem coexistir | OTLP + Azure Monitor | Ambas as variáveis definidas simultaneamente |
+
+O sampling ratio para o Azure Monitor é configurável via `OTEL_TRACES_SAMPLER_ARG` (valor entre `0.0` e `1.0`). Padrão: `1.0` em desenvolvimento e `0.1` em produção.
+
+---
+
+### Métricas de Negócio Customizadas
+
+Todos os instrumentos estão declarados em `src/CashFlow.ServiceDefaults/CashFlowMetrics.cs` sob o meter `CashFlow`, registrado via `IMeterFactory` como `Singleton` em todos os serviços.
+
+| Instrumento | Tipo | Unidade | Tags | Serviço produtor | O que mede |
+|---|---|---|---|---|---|
+| `cashflow.transactions.created` | Counter | `transactions` | `type`, `currency` | Transactions API | Transações criadas com sucesso |
+| `cashflow.transactions.amount` | Histogram | `{currency}` | `type`, `currency` | Transactions API | Distribuição dos valores monetários |
+| `cashflow.consolidation.events_processed` | Counter | `events` | `result` | Consolidation API | Eventos `TransactionCreated` consumidos |
+| `cashflow.consolidation.processing_duration_ms` | Histogram | `ms` | — | Consolidation API | Duração do processamento no consumer |
+| `cashflow.consolidation.eventual_consistency_ms` | Histogram | `ms` | — | Consolidation API | Tempo entre publicação do evento e conclusão do consumo (janela de consistência eventual) |
+| `cashflow.gateway.auth_failures` | Counter | `failures` | `reason` | Gateway | Falhas de autenticação JWT (`unauthorized`, `missing_token`, `missing_sub_claim`) |
+| `cashflow.messaging.dlq_faults` | Counter | `faults` | `message_type`, `exception_type` | Consolidation API | Mensagens movidas para DLQ após esgotar retries |
+
+---
+
+### Health Checks
+
+Cada serviço expõe dois endpoints, configurados em `AddDefaultHealthChecks()` e mapeados por `MapDefaultEndpoints()`:
+
+| Endpoint | Propósito | Verificações |
+|---|---|---|
+| `GET /health` | Readiness — todas as verificações registradas | `self` + `rabbitmq` (Transactions e Consolidation) |
+| `GET /alive` | Liveness — apenas verificações com tag `live` | `self` |
+
+O check `rabbitmq` é adicionado pelo MassTransit em Transactions e Consolidation. Gateway e Identity expõem apenas `self`.
+
+No AppHost, os endpoints `/health` de todos os serviços são monitorados via `WithHttpHealthCheck("/health")`. Em testes E2E (`CASHFLOW_E2E_TESTING=true`) esse monitoramento é omitido por compatibilidade com o Aspire Testing host.
+
+---
+
+### Aspire Dashboard (Desenvolvimento)
+
+O Aspire Dashboard é iniciado automaticamente junto com o AppHost e já recebe toda a telemetria dos serviços via OTLP — sem configuração adicional.
+
+A URL do dashboard é exibida no terminal na inicialização. Ele fornece:
+
+- **Resources**: status de saúde e URL de cada serviço, banco de dados e broker
+- **Console logs**: stdout/stderr de todos os processos em tempo real
+- **Structured logs**: logs estruturados com busca por campo, nível e serviço
+- **Traces**: traces distribuídas end-to-end cruzando Gateway → Transactions API → RabbitMQ → Consolidation API em uma única visualização de waterfall
+- **Metrics**: gráficos de séries temporais para todas as métricas, incluindo os instrumentos customizados do meter `CashFlow`
+
+---
+
+### Azure Monitor / Application Insights (Produção)
+
+A connection string do Application Insights é injetada pelo Bicep de cada Container App como variável de ambiente `APPLICATIONINSIGHTS_CONNECTION_STRING`. O SDK `Azure.Monitor.OpenTelemetry.AspNetCore` é ativado automaticamente quando essa variável está presente.
+
+**Workbook de NFRs** (`infra/monitoring/workbooks.module.bicep` + `infra/monitoring/workbook-definition.json`):
+
+| Painel | Métricas usadas | NFR monitorado |
+|---|---|---|
+| Service Health & Uptime | `requests` (success rate por serviço) | NFR-1: disponibilidade |
+| Consolidation Processing Latency (p50/p95/p99) | `cashflow.consolidation.processing_duration_ms` | NFR-2: latência |
+| Consolidation Throughput (req/s) | `requests` (consolidation) | NFR-2: throughput |
+| Production vs Consumption Delta | `cashflow.transactions.created` vs `cashflow.consolidation.events_processed` | NFR-3: consistência eventual |
+| Dead Letter Queue Faults | `cashflow.messaging.dlq_faults` | NFR-3: confiabilidade de mensageria |
+| Event Ingestion Rate (events/s) | `cashflow.consolidation.events_processed` | NFR-4: taxa de ingestão |
+| Eventual Consistency Delay (p50/p95) | `cashflow.consolidation.eventual_consistency_ms` | NFR-4: janela de consistência eventual |
+
+**Alertas configurados** (`infra/monitoring/alerts.module.bicep`):
+
+| Alerta | Condição | Severidade |
+|---|---|---|
+| Health Check Failure | Qualquer serviço com health check falhando por > 2 min | Crítico |
+| Consolidation Latency p95 | `processing_duration_ms` p95 > 200 ms por > 5 min | Aviso |
+| Dead Letter Queue Depth | `dlq_faults` > 0 em qualquer janela de 1 min | Aviso |
+| Eventual Consistency Delta | Delta entre `transactions.created` e `events_processed` > 100 por > 10 min | Crítico |
+| Ingestion Rate Low | Taxa de ingestão < 50 msg/s por > 5 min | Aviso |
+| Eventual Consistency p95 | `eventual_consistency_ms` p95 > 5000 ms por > 5 min | Aviso |
+| HTTP 5xx Rate | Taxa de erros 5xx > 5% do total por > 5 min | Aviso |
 
 ---
 
