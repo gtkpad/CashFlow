@@ -44,7 +44,7 @@ public sealed class TransactionCreatedConsumer(
         await repo.AddIfNewAsync(summary);
 
         // EF Core change tracker persists modified entities on SaveChangesAsync
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(context.CancellationToken);
 
         var tag = $"balance-{evt.MerchantId}-{evt.ReferenceDate:yyyy-MM-dd}";
         await cacheStore.EvictByTagAsync(tag, context.CancellationToken);
