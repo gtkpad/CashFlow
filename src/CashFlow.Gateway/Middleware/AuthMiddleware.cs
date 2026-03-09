@@ -12,9 +12,13 @@ public sealed class AuthMiddleware(RequestDelegate next, IConfiguration configur
         var path = context.Request.Path.Value ?? "";
 
         // Inject gateway secret on all proxied requests for defense-in-depth
+        // Remove first to prevent header spoofing by untrusted clients
         var gatewaySecret = configuration["Gateway:Secret"];
         if (!string.IsNullOrEmpty(gatewaySecret))
-            context.Request.Headers["X-Gateway-Secret"] = gatewaySecret;
+        {
+            context.Request.Headers.Remove("X-Gateway-Secret");
+            context.Request.Headers.Append("X-Gateway-Secret", gatewaySecret);
+        }
 
         if (_publicPaths.Any(p => path.StartsWith(p, StringComparison.OrdinalIgnoreCase)))
         {
@@ -51,7 +55,8 @@ public sealed class AuthMiddleware(RequestDelegate next, IConfiguration configur
             return;
         }
 
-        context.Request.Headers["X-User-Id"] = userId;
+        context.Request.Headers.Remove("X-User-Id");
+        context.Request.Headers.Append("X-User-Id", userId);
 
         await next(context);
     }

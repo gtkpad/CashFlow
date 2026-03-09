@@ -148,4 +148,26 @@ public class AuthMiddlewareTests
         context.Request.Headers["X-User-Id"].ToString().Should().Be(userId);
         await _next.Received(1).Invoke(context);
     }
+
+    [Fact]
+    public async Task InvokeAsync_PreExistingXUserIdHeader_ShouldBeReplacedWithJwtSub()
+    {
+        var middleware = CreateMiddleware();
+        var realUserId = Guid.NewGuid().ToString();
+        var spoofedUserId = Guid.NewGuid().ToString();
+
+        var context = new DefaultHttpContext
+        {
+            User = new ClaimsPrincipal(new ClaimsIdentity(
+                [new Claim("sub", realUserId)], "test"))
+        };
+        context.Request.Path = "/api/transactions";
+        context.Request.Headers["X-User-Id"] = spoofedUserId;
+
+        await middleware.InvokeAsync(context);
+
+        context.Request.Headers["X-User-Id"].ToString().Should().Be(realUserId);
+        context.Request.Headers["X-User-Id"].ToString().Should().NotBe(spoofedUserId);
+        await _next.Received(1).Invoke(context);
+    }
 }

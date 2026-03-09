@@ -22,7 +22,8 @@ public sealed class TransactionCreatedConsumer(
         var startTimestamp = Stopwatch.GetTimestamp();
         var evt = context.Message;
         var merchantId = new MerchantId(evt.MerchantId);
-        var type = Enum.Parse<TransactionType>(evt.TransactionType);
+        if (!Enum.TryParse<TransactionType>(evt.TransactionType, ignoreCase: true, out var type))
+            throw new InvalidOperationException($"Unknown TransactionType: '{evt.TransactionType}'");
 
         logger.LogInformation(
             "Processing TransactionCreated: MerchantId={MerchantId}, Date={Date}, Type={Type}, Amount={Amount}",
@@ -31,11 +32,9 @@ public sealed class TransactionCreatedConsumer(
         var summary = await repo.GetByDateAndMerchant(merchantId, evt.ReferenceDate)
                       ?? DailySummary.CreateForDay(merchantId, evt.ReferenceDate);
 
-        var isNew = summary.TransactionCount == 0;
         summary.ApplyTransaction(type, new Money(evt.Amount, evt.Currency));
 
-        if (isNew)
-            await repo.AddAsync(summary);
+        await repo.AddIfNewAsync(summary);
 
         // EF Core change tracker persists modified entities on SaveChangesAsync
         await db.SaveChangesAsync();

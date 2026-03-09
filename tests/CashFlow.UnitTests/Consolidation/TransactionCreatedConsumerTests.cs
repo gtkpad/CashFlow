@@ -55,7 +55,7 @@ public class TransactionCreatedConsumerTests : IDisposable
     }
 
     [Fact]
-    public async Task Consume_InvalidTransactionType_ThrowsArgumentException()
+    public async Task Consume_InvalidTransactionType_ThrowsInvalidOperationException()
     {
         var message = Substitute.For<ITransactionCreated>();
         message.MerchantId.Returns(Guid.NewGuid());
@@ -68,7 +68,8 @@ public class TransactionCreatedConsumerTests : IDisposable
 
         var act = () => _consumer.Consume(context);
 
-        await act.Should().ThrowAsync<ArgumentException>();
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("*Unknown TransactionType*");
     }
 
     [Fact]

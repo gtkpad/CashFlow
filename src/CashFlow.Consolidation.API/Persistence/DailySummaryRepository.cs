@@ -14,4 +14,10 @@ public sealed class DailySummaryRepository(ConsolidationDbContext db) : IDailySu
 
     public async Task AddAsync(DailySummary summary, CancellationToken ct = default)
         => await db.DailySummaries.AddAsync(summary, ct);
+
+    public async Task AddIfNewAsync(DailySummary summary, CancellationToken ct = default)
+    {
+        if (db.Entry(summary).State == EntityState.Detached)
+            await db.DailySummaries.AddAsync(summary, ct);
+    }
 }
