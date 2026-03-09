@@ -80,7 +80,7 @@ public class TransactionCreatedConsumerTests : IDisposable
         var merchantId = Guid.NewGuid();
         var date = new DateOnly(2025, 6, 15);
 
-        var credit = CreateMessage(merchantId, date, 200m, "Credit");
+        var credit = CreateMessage(merchantId, date, 200m);
         await _consumer.Consume(CreateConsumeContext(credit));
 
         var debit = CreateMessage(merchantId, date, 50m, "Debit");

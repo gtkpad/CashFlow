@@ -39,9 +39,12 @@ public static class MerchantIdExtensions
     public static Guid GetMerchantId(this HttpContext httpContext)
     {
         if (httpContext.Items[MerchantIdFilter.MerchantIdKey] is not Guid merchantId)
+        {
             throw new InvalidOperationException(
                 "MerchantId not found in HttpContext.Items. " +
                 "Ensure the endpoint group is decorated with RequireMerchantId().");
+        }
+
         return merchantId;
     }
 }

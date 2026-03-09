@@ -9,14 +9,14 @@ namespace CashFlow.Transactions.API.Persistence;
 ///     via MassTransit antes de a transação SaveChanges ser confirmada.
 /// </summary>
 /// <remarks>
-///     Recebe uma <see cref="Func{IPublishEndpoint}"/> factory em vez de um
-///     <see cref="IPublishEndpoint"/> direto para quebrar a dependência circular de DI:
-///     tanto <see cref="TransactionsDbContext"/> (Scoped) quanto <see cref="IPublishEndpoint"/>
+///     Recebe uma <see cref="Func{IPublishEndpoint}" /> factory em vez de um
+///     <see cref="IPublishEndpoint" /> direto para quebrar a dependência circular de DI:
+///     tanto <see cref="TransactionsDbContext" /> (Scoped) quanto <see cref="IPublishEndpoint" />
 ///     (Scoped via MassTransit) são registrados no mesmo scope, causando deadlock de
 ///     inicialização se o endpoint for resolvido no construtor do DbContext.
 ///     A factory adia a resolução para o primeiro <c>SavingChangesAsync</c>, após
 ///     o grafo de dependências estar completamente construído.
-///     Ver <see cref="ApplicationExtensions"/> para o padrão de registro.
+///     Ver <see cref="ApplicationExtensions" /> para o padrão de registro.
 /// </remarks>
 public sealed class DomainEventInterceptor(Func<IPublishEndpoint> publishEndpointFactory) : SaveChangesInterceptor
 {

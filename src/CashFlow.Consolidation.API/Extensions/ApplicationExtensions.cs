@@ -11,19 +11,13 @@ internal static class ApplicationExtensions
 {
     internal static WebApplicationBuilder AddApplication(this WebApplicationBuilder builder)
     {
-        builder.Services.AddCarter(configurator: c =>
-        {
-            c.WithModule<GetDailyBalanceEndpoint>();
-        });
+        builder.Services.AddCarter(configurator: c => { c.WithModule<GetDailyBalanceEndpoint>(); });
 
         builder.Services.AddSingleton(TimeProvider.System);
         builder.Services.AddSingleton<DailyBalanceCachePolicy>();
         builder.Services.AddOutputCache();
         builder.Services.AddOptions<OutputCacheOptions>()
-            .Configure<DailyBalanceCachePolicy>((opts, policy) =>
-            {
-                opts.AddPolicy("DailyBalance", policy);
-            });
+            .Configure<DailyBalanceCachePolicy>((opts, policy) => { opts.AddPolicy("DailyBalance", policy); });
 
         builder.Services.AddScoped<IDailySummaryRepository, DailySummaryRepository>();
         builder.Services.AddScoped<GetDailyBalanceHandler>();

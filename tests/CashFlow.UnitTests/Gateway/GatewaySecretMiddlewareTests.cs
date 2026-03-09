@@ -107,7 +107,7 @@ public class GatewaySecretMiddlewareTests
     [Fact]
     public async Task InvokeAsync_NoConfigInProduction_ShouldReturn503()
     {
-        var middleware = CreateMiddleware(null, "Production");
+        var middleware = CreateMiddleware(null);
         var context = new DefaultHttpContext();
         context.Request.Path = "/api/transactions";
 
