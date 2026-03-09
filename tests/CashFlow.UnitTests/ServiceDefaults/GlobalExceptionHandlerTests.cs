@@ -12,7 +12,7 @@ public class GlobalExceptionHandlerTests
     [Theory]
     [InlineData(typeof(ArgumentOutOfRangeException), StatusCodes.Status400BadRequest)]
     [InlineData(typeof(ArgumentException), StatusCodes.Status400BadRequest)]
-    [InlineData(typeof(InvalidOperationException), StatusCodes.Status409Conflict)]
+    [InlineData(typeof(InvalidOperationException), StatusCodes.Status500InternalServerError)]
     public void MapException_ShouldReturnCorrectStatusCode(Type exceptionType, int expectedStatusCode)
     {
         var exception = (Exception)Activator.CreateInstance(exceptionType, "test message")!;
