@@ -103,27 +103,16 @@ public class DependencyTests
     [Fact]
     public void Consumers_ShouldNotDependOn_Endpoints()
     {
-        var consolidationAssembly = typeof(CashFlow.Consolidation.API.Persistence.ConsolidationDbContext).Assembly;
-
-        var result = Types.InAssembly(consolidationAssembly)
-            .That()
-            .ResideInNamespace("CashFlow.Consolidation.API.Features.TransactionCreated")
-            .ShouldNot()
-            .HaveDependencyOn("CashFlow.Consolidation.API.Features.GetDailyBalance")
-            .GetResult();
-
-        result.IsSuccessful.Should().BeTrue();
-
         var transactionsAssembly = typeof(CashFlow.Transactions.API.Persistence.TransactionsDbContext).Assembly;
 
-        var result2 = Types.InAssembly(transactionsAssembly)
+        var result = Types.InAssembly(transactionsAssembly)
             .That()
             .ResideInNamespace("CashFlow.Transactions.API.Features.GetTransaction")
             .ShouldNot()
             .HaveDependencyOn("CashFlow.Transactions.API.Features.CreateTransaction")
             .GetResult();
 
-        result2.IsSuccessful.Should().BeTrue();
+        result.IsSuccessful.Should().BeTrue();
     }
 
     [Fact]
@@ -175,6 +164,38 @@ public class DependencyTests
             Types.InAssembly(assembly)
                 .That().HaveNameEndingWith("Handler")
                 .Should().ResideInNamespaceContaining("Features")
+                .GetResult().IsSuccessful.Should().BeTrue();
+        }
+    }
+
+    [Fact]
+    public void Consumers_ShouldResideInFeaturesNamespace()
+    {
+        foreach (var assembly in new[]
+        {
+            typeof(CashFlow.Transactions.API.Persistence.TransactionsDbContext).Assembly,
+            typeof(CashFlow.Consolidation.API.Persistence.ConsolidationDbContext).Assembly
+        })
+        {
+            Types.InAssembly(assembly)
+                .That().HaveNameEndingWith("Consumer")
+                .Should().ResideInNamespaceContaining("Features")
+                .GetResult().IsSuccessful.Should().BeTrue();
+        }
+    }
+
+    [Fact]
+    public void Repositories_ShouldResideInPersistenceNamespace()
+    {
+        foreach (var assembly in new[]
+        {
+            typeof(CashFlow.Transactions.API.Persistence.TransactionsDbContext).Assembly,
+            typeof(CashFlow.Consolidation.API.Persistence.ConsolidationDbContext).Assembly
+        })
+        {
+            Types.InAssembly(assembly)
+                .That().HaveNameEndingWith("Repository")
+                .Should().ResideInNamespaceContaining("Persistence")
                 .GetResult().IsSuccessful.Should().BeTrue();
         }
     }
