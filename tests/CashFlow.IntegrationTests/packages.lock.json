@@ -1169,7 +1169,7 @@
         "type": "Project",
         "dependencies": {
           "Asp.Versioning.Http": "[8.1.1, )",
-          "Aspire.Azure.Npgsql.EntityFrameworkCore.PostgreSQL": "[13.1.2, )",
+          "Aspire.Npgsql.EntityFrameworkCore.PostgreSQL": "[13.1.2, )",
           "Aspire.RabbitMQ.Client": "[13.1.2, )",
           "Carter": "[10.0.0, )",
           "CashFlow.Domain": "[1.0.0, )",
@@ -1181,7 +1181,6 @@
           "MassTransit.RabbitMQ": "[8.5.8, )",
           "Microsoft.AspNetCore.OpenApi": "[10.0.3, )",
           "Microsoft.EntityFrameworkCore": "[10.0.3, )",
-          "Microsoft.EntityFrameworkCore.Relational": "[10.0.3, )",
           "Npgsql.EntityFrameworkCore.PostgreSQL": "[10.0.0, )",
           "Roslynator.Analyzers": "[4.13.1, )"
         }

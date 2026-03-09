@@ -2,12 +2,21 @@ using CashFlow.Consolidation.API.Features.GetDailyBalance;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.OutputCaching;
+using Microsoft.Extensions.Time.Testing;
 
 namespace CashFlow.UnitTests.Consolidation;
 
 public class DailyBalanceCachePolicyTests
 {
-    private readonly DailyBalanceCachePolicy _policy = new(TimeProvider.System);
+    // Fixed reference point: eliminates flakiness when tests run near UTC midnight
+    private static readonly DateTimeOffset ReferenceNow = new(2025, 6, 15, 12, 0, 0, TimeSpan.Zero);
+    private readonly FakeTimeProvider _fakeTimeProvider = new(ReferenceNow);
+    private readonly DailyBalanceCachePolicy _policy;
+
+    public DailyBalanceCachePolicyTests()
+    {
+        _policy = new DailyBalanceCachePolicy(_fakeTimeProvider);
+    }
 
     private static OutputCacheContext CreateContext(string? date = null, string? userId = null)
     {
@@ -25,8 +34,7 @@ public class DailyBalanceCachePolicyTests
     [Fact]
     public async Task CacheRequestAsync_PastDate_ShouldSetOneHourExpiration()
     {
-        var pastDate = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-1).ToString("yyyy-MM-dd");
-        var context = CreateContext(pastDate);
+        var context = CreateContext("2025-06-14");
 
         await _policy.CacheRequestAsync(context, CancellationToken.None);
 
@@ -36,8 +44,7 @@ public class DailyBalanceCachePolicyTests
     [Fact]
     public async Task CacheRequestAsync_TodayDate_ShouldSetFiveSecondExpiration()
     {
-        var today = DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd");
-        var context = CreateContext(today);
+        var context = CreateContext("2025-06-15");
 
         await _policy.CacheRequestAsync(context, CancellationToken.None);
 
@@ -47,8 +54,7 @@ public class DailyBalanceCachePolicyTests
     [Fact]
     public async Task CacheRequestAsync_FutureDate_ShouldSetFiveSecondExpiration()
     {
-        var futureDate = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(1).ToString("yyyy-MM-dd");
-        var context = CreateContext(futureDate);
+        var context = CreateContext("2025-06-16");
 
         await _policy.CacheRequestAsync(context, CancellationToken.None);
 

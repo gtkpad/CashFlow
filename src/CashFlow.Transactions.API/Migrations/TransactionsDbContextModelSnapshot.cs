@@ -52,8 +52,10 @@ namespace CashFlow.Transactions.API.Migrations
                         .HasColumnType("date")
                         .HasColumnName("reference_date");
 
-                    b.Property<int>("Type")
-                        .HasColumnType("integer")
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
                         .HasColumnName("type");
 
                     b.Property<uint>("xmin")

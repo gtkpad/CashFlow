@@ -8,7 +8,7 @@ public sealed class GetDailyBalanceHandler(IDailySummaryRepository repository)
     public async Task<GetDailyBalanceResponse?> HandleAsync(
         Guid merchantId, DateOnly date, CancellationToken ct = default)
     {
-        var summary = await repository.GetByDateAndMerchant(new MerchantId(merchantId), date, ct);
+        var summary = await repository.FindByDateAndMerchantAsync(new MerchantId(merchantId), date, ct);
 
         if (summary is null)
             return null;

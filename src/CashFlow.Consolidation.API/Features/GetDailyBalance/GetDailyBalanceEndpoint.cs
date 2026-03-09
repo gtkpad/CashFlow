@@ -28,7 +28,7 @@ public sealed class GetDailyBalanceEndpoint : ICarterModule
                 return result is not null
                     ? Results.Ok(result)
                     : Results.Problem(
-                        $"No consolidated data found for date {date:yyyy-MM-dd}.",
+                        detail: "The requested consolidated balance was not found.",
                         statusCode: StatusCodes.Status404NotFound,
                         title: "Resource Not Found");
             })

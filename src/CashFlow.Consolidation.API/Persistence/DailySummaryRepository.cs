@@ -6,18 +6,24 @@ namespace CashFlow.Consolidation.API.Persistence;
 
 public sealed class DailySummaryRepository(ConsolidationDbContext db) : IDailySummaryRepository
 {
-    // Without AsNoTracking: the consumer needs change tracking so SaveChangesAsync detects modifications
-    public Task<DailySummary?> GetByDateAndMerchant(
+    // With tracking: consumer needs change tracking so SaveChangesAsync detects modifications
+    public Task<DailySummary?> GetByDateAndMerchantAsync(
         MerchantId merchantId, DateOnly date, CancellationToken ct = default)
         => db.DailySummaries
             .FirstOrDefaultAsync(d => d.MerchantId == merchantId && d.Date == date, ct);
 
-    public async Task AddAsync(DailySummary summary, CancellationToken ct = default)
-        => await db.DailySummaries.AddAsync(summary, ct);
+    // Without tracking: pure read — avoids ChangeTracker overhead
+    public Task<DailySummary?> FindByDateAndMerchantAsync(
+        MerchantId merchantId, DateOnly date, CancellationToken ct = default)
+        => db.DailySummaries
+            .AsNoTracking()
+            .FirstOrDefaultAsync(d => d.MerchantId == merchantId && d.Date == date, ct);
 
-    public async Task AddIfNewAsync(DailySummary summary, CancellationToken ct = default)
+    public Task AddIfNewAsync(DailySummary summary, CancellationToken ct = default)
     {
         if (db.Entry(summary).State == EntityState.Detached)
-            await db.DailySummaries.AddAsync(summary, ct);
+            db.DailySummaries.Add(summary);
+
+        return Task.CompletedTask;
     }
 }

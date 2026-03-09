@@ -28,6 +28,12 @@
           "Microsoft.Extensions.Logging": "10.0.3"
         }
       },
+      "Microsoft.Extensions.TimeProvider.Testing": {
+        "type": "Direct",
+        "requested": "[10.3.0, )",
+        "resolved": "10.3.0",
+        "contentHash": "CKjS1u0JlMIA44o/0NV8nXRCaudpol3ERVlB9eu21kvq++EMt7fBavbPxWXN+nOpsdDhz/pb0MY2RBpk2/PGbA=="
+      },
       "Microsoft.NET.Test.Sdk": {
         "type": "Direct",
         "requested": "[17.14.1, )",
@@ -898,7 +904,7 @@
         "type": "Project",
         "dependencies": {
           "Asp.Versioning.Http": "[8.1.1, )",
-          "Aspire.Azure.Npgsql.EntityFrameworkCore.PostgreSQL": "[13.1.2, )",
+          "Aspire.Npgsql.EntityFrameworkCore.PostgreSQL": "[13.1.2, )",
           "Aspire.RabbitMQ.Client": "[13.1.2, )",
           "Carter": "[10.0.0, )",
           "CashFlow.Domain": "[1.0.0, )",
@@ -910,7 +916,6 @@
           "MassTransit.RabbitMQ": "[8.5.8, )",
           "Microsoft.AspNetCore.OpenApi": "[10.0.3, )",
           "Microsoft.EntityFrameworkCore": "[10.0.3, )",
-          "Microsoft.EntityFrameworkCore.Relational": "[10.0.3, )",
           "Npgsql.EntityFrameworkCore.PostgreSQL": "[10.0.0, )",
           "Roslynator.Analyzers": "[4.13.1, )"
         }

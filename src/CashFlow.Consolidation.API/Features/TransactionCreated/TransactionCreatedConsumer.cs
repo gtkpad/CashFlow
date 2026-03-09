@@ -22,14 +22,21 @@ public sealed class TransactionCreatedConsumer(
         var startTimestamp = Stopwatch.GetTimestamp();
         var evt = context.Message;
         var merchantId = new MerchantId(evt.MerchantId);
-        if (!Enum.TryParse<TransactionType>(evt.TransactionType, true, out var type))
-            throw new InvalidOperationException($"Unknown TransactionType: '{evt.TransactionType}'");
 
         logger.LogInformation(
             "Processing TransactionCreated: MerchantId={MerchantId}, Date={Date}, Type={Type}, Amount={Amount}",
             evt.MerchantId, evt.ReferenceDate, evt.TransactionType, evt.Amount);
 
-        var summary = await repo.GetByDateAndMerchant(merchantId, evt.ReferenceDate)
+        if (!Enum.TryParse<TransactionType>(evt.TransactionType, true, out var type))
+        {
+            logger.LogError(
+                "Rejected message with unknown TransactionType: MerchantId={MerchantId}, Date={Date}, "
+                + "ReceivedType={ReceivedType}, Amount={Amount}",
+                evt.MerchantId, evt.ReferenceDate, evt.TransactionType, evt.Amount);
+            throw new InvalidOperationException($"Unknown TransactionType: '{evt.TransactionType}'");
+        }
+
+        var summary = await repo.GetByDateAndMerchantAsync(merchantId, evt.ReferenceDate)
                       ?? DailySummary.CreateForDay(merchantId, evt.ReferenceDate);
 
         summary.ApplyTransaction(type, new Money(evt.Amount, evt.Currency));

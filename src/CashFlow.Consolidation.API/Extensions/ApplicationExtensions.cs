@@ -3,6 +3,7 @@ using Carter;
 using CashFlow.Consolidation.API.Features.GetDailyBalance;
 using CashFlow.Consolidation.API.Persistence;
 using CashFlow.Domain.Consolidation;
+using Microsoft.AspNetCore.OutputCaching;
 
 namespace CashFlow.Consolidation.API.Extensions;
 
@@ -13,11 +14,13 @@ internal static class ApplicationExtensions
         builder.Services.AddCarter(configurator: c => { c.WithModule<GetDailyBalanceEndpoint>(); });
 
         builder.Services.AddSingleton(TimeProvider.System);
-        builder.Services.AddOutputCache(options =>
-        {
-            options.AddPolicy("DailyBalance",
-                new DailyBalanceCachePolicy(TimeProvider.System));
-        });
+        builder.Services.AddSingleton<DailyBalanceCachePolicy>();
+        builder.Services.AddOutputCache();
+        builder.Services.AddOptions<OutputCacheOptions>()
+            .Configure<DailyBalanceCachePolicy>((opts, policy) =>
+            {
+                opts.AddPolicy("DailyBalance", policy);
+            });
 
         builder.Services.AddScoped<IDailySummaryRepository, DailySummaryRepository>();
         builder.Services.AddScoped<GetDailyBalanceHandler>();

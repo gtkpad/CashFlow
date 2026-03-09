@@ -26,7 +26,7 @@ public class GetDailyBalanceHandlerTests
         summary.ApplyTransaction(TransactionType.Credit, new Money(100m));
 
         _repository
-            .GetByDateAndMerchant(merchantId, date, Arg.Any<CancellationToken>())
+            .FindByDateAndMerchantAsync(merchantId, date, Arg.Any<CancellationToken>())
             .Returns(summary);
 
         var result = await _handler.HandleAsync(merchantId.Value, date);
@@ -43,7 +43,7 @@ public class GetDailyBalanceHandlerTests
     public async Task HandleAsync_NoSummaryExists_ReturnsNull()
     {
         _repository
-            .GetByDateAndMerchant(Arg.Any<MerchantId>(), Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .FindByDateAndMerchantAsync(Arg.Any<MerchantId>(), Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
             .Returns((DailySummary?)null);
 
         var result = await _handler.HandleAsync(Guid.NewGuid(), new DateOnly(2025, 1, 1));
@@ -55,7 +55,7 @@ public class GetDailyBalanceHandlerTests
     public async Task HandleAsync_DifferentMerchant_ReturnsNull()
     {
         _repository
-            .GetByDateAndMerchant(Arg.Any<MerchantId>(), Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .FindByDateAndMerchantAsync(Arg.Any<MerchantId>(), Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
             .Returns((DailySummary?)null);
 
         var result = await _handler.HandleAsync(Guid.NewGuid(), new DateOnly(2025, 6, 15));
