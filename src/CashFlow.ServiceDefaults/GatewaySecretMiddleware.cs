@@ -13,7 +13,7 @@ public sealed class GatewaySecretMiddleware(
     IHostEnvironment environment,
     ILogger<GatewaySecretMiddleware> logger)
 {
-    private static readonly string[] _bypassPaths = ["/health", "/alive"];
+    private static readonly string[] _bypassPaths = [WellKnownPaths.Health, WellKnownPaths.Alive];
 
     public async Task InvokeAsync(HttpContext context)
     {

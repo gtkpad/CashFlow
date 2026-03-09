@@ -22,8 +22,8 @@ public sealed class AuthMiddleware(RequestDelegate next, IConfiguration configur
             return;
         }
 
-        if (path.StartsWith("/health", StringComparison.OrdinalIgnoreCase)
-            || path.StartsWith("/alive", StringComparison.OrdinalIgnoreCase))
+        if (path.StartsWith(WellKnownPaths.Health, StringComparison.OrdinalIgnoreCase)
+            || path.StartsWith(WellKnownPaths.Alive, StringComparison.OrdinalIgnoreCase))
         {
             await next(context);
             return;
