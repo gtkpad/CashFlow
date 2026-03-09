@@ -6,8 +6,11 @@ namespace CashFlow.Transactions.API.Persistence;
 
 public sealed class TransactionRepository(TransactionsDbContext db) : ITransactionRepository
 {
-    public async Task AddAsync(Transaction transaction, CancellationToken ct = default) =>
-        await db.Transactions.AddAsync(transaction, ct);
+    public Task AddAsync(Transaction transaction, CancellationToken ct = default)
+    {
+        db.Transactions.Add(transaction);
+        return Task.CompletedTask;
+    }
 
     public async Task<Transaction?> GetByIdAndMerchantAsync(
         TransactionId id, MerchantId merchantId, CancellationToken ct = default)
