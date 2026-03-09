@@ -4,7 +4,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace CashFlow.Transactions.API.Migrations
+namespace CashFlow.Transactions.API.Persistence.Migrations
 {
     /// <inheritdoc />
     public partial class InitialCreate : Migration

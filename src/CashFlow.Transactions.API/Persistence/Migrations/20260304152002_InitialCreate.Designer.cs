@@ -3,17 +3,20 @@ using System;
 using CashFlow.Transactions.API.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace CashFlow.Transactions.API.Migrations
+namespace CashFlow.Transactions.API.Persistence.Migrations
 {
     [DbContext(typeof(TransactionsDbContext))]
-    partial class TransactionsDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260304152002_InitialCreate")]
+    partial class InitialCreate
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -52,10 +55,8 @@ namespace CashFlow.Transactions.API.Migrations
                         .HasColumnType("date")
                         .HasColumnName("reference_date");
 
-                    b.Property<string>("Type")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
+                    b.Property<int>("Type")
+                        .HasColumnType("integer")
                         .HasColumnName("type");
 
                     b.Property<uint>("xmin")
@@ -68,9 +69,6 @@ namespace CashFlow.Transactions.API.Migrations
 
                     b.HasIndex("ReferenceDate")
                         .HasDatabaseName("ix_transaction_reference_date");
-
-                    b.HasIndex("MerchantId", "ReferenceDate")
-                        .HasDatabaseName("ix_transaction_merchant_id_reference_date");
 
                     b.ToTable("transaction", "transactions");
                 });

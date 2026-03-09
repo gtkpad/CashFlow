@@ -9,11 +9,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace CashFlow.Transactions.API.Migrations
+namespace CashFlow.Transactions.API.Persistence.Migrations
 {
     [DbContext(typeof(TransactionsDbContext))]
-    [Migration("20260304152002_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20260309162739_AddMerchantIdReferenceDateIndex")]
+    partial class AddMerchantIdReferenceDateIndex
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -69,6 +69,9 @@ namespace CashFlow.Transactions.API.Migrations
 
                     b.HasIndex("ReferenceDate")
                         .HasDatabaseName("ix_transaction_reference_date");
+
+                    b.HasIndex("MerchantId", "ReferenceDate")
+                        .HasDatabaseName("ix_transaction_merchant_id_reference_date");
 
                     b.ToTable("transaction", "transactions");
                 });

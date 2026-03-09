@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace CashFlow.Transactions.API.Migrations
+namespace CashFlow.Transactions.API.Persistence.Migrations
 {
     /// <inheritdoc />
     public partial class AddMerchantIdReferenceDateIndex : Migration
