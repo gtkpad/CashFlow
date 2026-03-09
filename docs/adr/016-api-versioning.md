@@ -4,8 +4,8 @@
 |---|---|
 | **Status** | Aceito |
 | **Data** | Março 2026 |
-| **Contexto** | As APIs do CashFlow usam versionamento por URL path (`/api/v1/...`) via Carter `MapGroup`. Não havia tooling formal para reportar versões suportadas, deprecar versões antigas ou comunicar ciclo de vida de API aos consumidores. |
-| **Decisão** | Adotar `Asp.Versioning.Http` para gestão formal de versões com reporting automático via headers HTTP. Manter URL path como mecanismo primário de seleção de versão. |
+| **Contexto** | As APIs de domínio do CashFlow (Transactions e Consolidation) usam versionamento por URL path (`/api/v1/...`) via Carter `MapGroup`. A Identity API é excluída — usa endpoints padronizados do ASP.NET Core Identity (`/api/identity/...`) que seguem a convenção do framework. Não havia tooling formal para reportar versões suportadas, deprecar versões antigas ou comunicar ciclo de vida de API aos consumidores. |
+| **Decisão** | Adotar `Asp.Versioning.Http` nas APIs de domínio (Transactions e Consolidation) para gestão formal de versões com reporting automático via headers HTTP. Manter URL path como mecanismo primário de seleção de versão. |
 
 ## Detalhes
 
@@ -31,6 +31,10 @@ Com `ReportApiVersions = true`, todas as respostas incluem:
 Carter registra rotas via `ICarterModule.AddRoutes()` dentro de um `MapGroup("api/v1")`. O `Asp.Versioning` opera via middleware global, sem necessidade de alterar os módulos Carter.
 
 A API `NewVersionedApi()` do `Asp.Versioning` foi avaliada mas descartada: a integração com `MapCarter()` (que descobre e registra módulos automaticamente) não é garantida. A abordagem híbrida (versioning global + URL path manual) é mais segura.
+
+### Escopo: por que a Identity API não é versionada
+
+A Identity API usa `MapIdentityApi<IdentityUser>()` — endpoints padronizados do ASP.NET Core Identity com convenção de rota própria (`/api/identity/register`, `/api/identity/login`). Estes endpoints seguem o ciclo de vida do framework, não do domínio. Versioná-los com `Asp.Versioning` seria inconsistente com a convenção do ASP.NET Core Identity e adicionaria complexidade sem benefício.
 
 ### Ciclo de vida de versão
 
@@ -68,3 +72,4 @@ graph LR
 - Consumidores de API podem inspecionar headers para detectar versões suportadas e deprecadas.
 - O URL path permanece como mecanismo primário (`/api/v1/`, `/api/v2/`).
 - A integração com Carter é limitada ao versionamento global — se necessário, futura migração para `NewVersionedApi()` com módulos Carter adaptados.
+- A Identity API mantém endpoints sem versão (`/api/identity/...`), seguindo a convenção padrão do ASP.NET Core Identity.

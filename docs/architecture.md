@@ -244,7 +244,7 @@ O contexto de Daily Summary atua como **Conformist** em relação ao Core Domain
 
 O método `ApplyTransaction(type, value)` valida que o valor é positivo, incrementa o total correspondente, incrementa o contador e atualiza o timestamp.
 
-> **Nota CQRS:** O endpoint `GetDailyBalance` acessa `ConsolidationDbContext` diretamente via LINQ com `AsNoTracking()` — sem Repository — pois é o lado Query do CQRS. Veja [ADR-013](adr/013-query-side-no-repository.md).
+> **Nota CQRS:** O endpoint `GetDailyBalance` usa `IDailySummaryRepository` com método de leitura otimizado (`AsNoTracking()`) — sem change tracking nem Unit of Work — pois é o lado Query do CQRS. Veja [ADR-013](adr/013-query-side-no-repository.md).
 
 ---
 
@@ -266,7 +266,7 @@ As decisões arquiteturais estão documentadas individualmente em [`adr/`](adr/)
 | [ADR-010](adr/010-di-handlers.md) | Handlers via DI Direto (sem MediatR) | Aceito |
 | [ADR-011](adr/011-container-apps-scaling.md) | Auto-Scaling: HTTP Scaling Rules por perfil de carga | Aceito |
 | [ADR-012](adr/012-postgresql-scaling.md) | PostgreSQL: Standard_D2ds_v4 + PgBouncer Built-in | Aceito |
-| [ADR-013](adr/013-query-side-no-repository.md) | Query-Side com DbContext Direto (sem Repository) | Aceito |
+| [ADR-013](adr/013-query-side-no-repository.md) | Query-Side com Leitura Otimizada (AsNoTracking) | Aceito |
 | [ADR-014](adr/014-resource-authorization.md) | Autorização Baseada em Recurso via MerchantId (Tenant Isolation) | Aceito |
 | [ADR-015](adr/015-data-security.md) | Segurança de Dados: Encryption at Rest/Transit + Networking Roadmap | Aceito |
 | [ADR-016](adr/016-api-versioning.md) | API Versioning com Asp.Versioning + Política de Deprecation | Aceito |
@@ -434,7 +434,7 @@ Premissas conservadoras:
 | **Gateway Secret** | `GatewaySecretMiddleware` nos backends valida header `X-Gateway-Secret` |
 | **Isolamento de dados** | `MerchantIdFilter` garante filtragem por `MerchantId` em todos os handlers |
 | **Transporte** | HTTPS obrigatório (TLS 1.2+); Ssl Mode=Require na connection string do PostgreSQL |
-| **Validação de entrada** | FluentValidation em todos os DTOs |
+| **Validação de entrada** | FluentValidation nos commands de escrita; Value Objects validam invariantes de domínio |
 | **Rate Limiting** | ASP.NET Core Fixed Window Limiter no YARP (3600 req/min por IP) |
 
 > Autorização baseada em recurso e isolamento multi-tenant: [ADR-014](adr/014-resource-authorization.md).
@@ -472,7 +472,7 @@ Plano de Disaster Recovery completo: [`docs/disaster-recovery.md`](disaster-reco
 
 1. Feature Slice chama o Domain; nunca reimplementa lógica de negócio.
 2. Repository interfaces (ports) vivem no Domain; implementações (adapters) em `Persistence/`.
-3. Queries do lado Read (CQRS) acessam `DbContext` diretamente via LINQ ([ADR-013](adr/013-query-side-no-repository.md)).
+3. Queries do lado Read (CQRS) usam Repository com métodos de leitura otimizados (`AsNoTracking()`) — sem Unit of Work ([ADR-013](adr/013-query-side-no-repository.md)).
 4. EF Configurations vivem em `Persistence/Configurations/` — são cross-feature.
 5. Features são caixas fechadas: Feature A não referencia Feature B.
 

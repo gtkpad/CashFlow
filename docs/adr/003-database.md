@@ -64,8 +64,15 @@ Concorrência via `xmin` (shadow property no EF Core). Tabelas `InboxState`, `Ou
 | ACID para Inbox/Outbox | Nativo | Workarounds necessários |
 | Custo | Zero adicional | Container extra |
 
+## Nota: Divergência de Configuração entre APIs
+
+A Consolidation API usa `AddAzureNpgsqlDbContext<>` (com DbContext pooling), otimizando para leituras de alta frequência. A Transactions API, por sua vez, usa `AddDbContext<>` **sem pooling**, porque o `DomainEventInterceptor` é registrado como serviço scoped e injetado via `OnConfiguring` — o que é incompatível com DbContext pooling (`AddDbContextPool`/`AddAzureNpgsqlDbContext`), que exige contextos sem estado scoped.
+
+Essa divergência é **intencional**: o write-side precisa do interceptor para capturar domain events na mesma transação ACID (Bus Outbox pattern), enquanto o read-side não publica eventos e pode usar pooling livremente.
+
 ## Consequências
 
 - Único tech stack de banco reduz complexidade operacional.
 - Migrations EF Core de cada serviço são completamente independentes.
+- A Transactions API não se beneficia de DbContext pooling — trade-off aceito em favor do `DomainEventInterceptor` para publicação atômica de eventos.
 - Se leituras ultrapassarem ~1.000 req/s, adicionar Redis como cache layer à frente do PostgreSQL (Output Cache com Redis IOutputCacheStore).
