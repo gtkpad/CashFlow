@@ -414,7 +414,6 @@ O tempo para execução do desafio é limitado. Abaixo estão evoluções que ag
 | Evolução | Complexidade | Benefício |
 |---|---|---|
 | **Event Sourcing** (Marten/EventStoreDB) | Alta | Audit trail perfeito, time travel |
-| **CDC (Debezium)** substituindo Outbox polling | Média | Latência ~10ms (vs ~500ms do polling) |
 | **Redis** como cache à frente do PostgreSQL | Baixa | Sub-milissegundo para reads (>1000 req/s) |
 | **Identity Server / Keycloak** | Custo Operacional Alto | OIDC completo, OAuth2 para 3rd party |
 | **Multi-tenancy Isolado (SaaS)** | Média | Múltiplos merchants com DB/schema por cliente |
