@@ -37,7 +37,7 @@ public class CreateTransactionHandlerTests
         // Arrange
         var merchantId = Guid.NewGuid();
         var command = new CreateTransactionCommand(
-            DateOnly.FromDateTime(DateTime.Today),
+            DateOnly.FromDateTime(DateTime.UtcNow),
             TransactionType.Credit,
             150.00m,
             "BRL",
@@ -60,7 +60,7 @@ public class CreateTransactionHandlerTests
     {
         // Arrange
         var command = new CreateTransactionCommand(
-            DateOnly.FromDateTime(DateTime.Today),
+            DateOnly.FromDateTime(DateTime.UtcNow),
             TransactionType.Credit,
             100.00m,
             "BRL",

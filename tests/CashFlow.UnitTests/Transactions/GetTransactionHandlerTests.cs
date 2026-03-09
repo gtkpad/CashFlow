@@ -22,7 +22,7 @@ public class GetTransactionHandlerTests
     public async Task HandleAsync_ExistingTransaction_ShouldReturnResponse()
     {
         var transaction = Transaction.Create(
-            new MerchantId(_merchantId), DateOnly.FromDateTime(DateTime.Today),
+            new MerchantId(_merchantId), DateOnly.FromDateTime(DateTime.UtcNow),
             TransactionType.Credit, new Money(150m), "Sale #1", "user@test.com").Value;
 
         _repository
@@ -52,12 +52,21 @@ public class GetTransactionHandlerTests
     [Fact]
     public async Task HandleAsync_TransactionOfDifferentMerchant_ShouldReturnNull()
     {
+        // Arrange — transaction belongs to a *different* merchant
+        var ownerMerchantId = Guid.NewGuid();
+        var transaction = Transaction.Create(
+            new MerchantId(ownerMerchantId), DateOnly.FromDateTime(DateTime.UtcNow),
+            TransactionType.Credit, new Money(100m), "Sale #1", "owner@test.com").Value;
+
+        // Repository only returns for the owner's MerchantId
         _repository
-            .GetByIdAndMerchantAsync(Arg.Any<TransactionId>(), Arg.Any<MerchantId>(), Arg.Any<CancellationToken>())
-            .Returns((Transaction?)null);
+            .GetByIdAndMerchantAsync(transaction.Id, new MerchantId(ownerMerchantId), Arg.Any<CancellationToken>())
+            .Returns(transaction);
 
-        var result = await _handler.HandleAsync(_merchantId, Guid.NewGuid());
+        // Act — queried with _merchantId (different from ownerMerchantId)
+        var result = await _handler.HandleAsync(_merchantId, transaction.Id.Value);
 
+        // Assert — NSubstitute returns null for unmatched setup
         result.Should().BeNull();
     }
 }

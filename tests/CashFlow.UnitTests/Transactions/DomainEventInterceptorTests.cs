@@ -36,7 +36,7 @@ public class DomainEventInterceptorTests
         await using var context = CreateContext();
         var result = Transaction.Create(
             new MerchantId(Guid.NewGuid()),
-            DateOnly.FromDateTime(DateTime.Today),
+            DateOnly.FromDateTime(DateTime.UtcNow),
             TransactionType.Credit,
             new Money(100m),
             "Test transaction",
@@ -83,7 +83,7 @@ public class DomainEventInterceptorTests
 
         var result = Transaction.Create(
             new MerchantId(Guid.NewGuid()),
-            DateOnly.FromDateTime(DateTime.Today),
+            DateOnly.FromDateTime(DateTime.UtcNow),
             TransactionType.Credit,
             new Money(100m),
             "Test transaction",
@@ -106,7 +106,7 @@ public class DomainEventInterceptorTests
         await using var context = CreateContext();
         var transaction = Transaction.Create(
             new MerchantId(Guid.NewGuid()),
-            DateOnly.FromDateTime(DateTime.Today),
+            DateOnly.FromDateTime(DateTime.UtcNow),
             TransactionType.Credit,
             new Money(100m),
             "Test transaction",
