@@ -4,23 +4,42 @@
 |---|---|
 | **Status** | Aceito |
 | **Data** | Março 2026 |
-| **Contexto** | A comunicação assíncrona (MassTransit/RabbitMQ) e as conexões com PostgreSQL precisam de proteção contra falhas transitórias. O YARP também precisa de circuit breaker para os serviços backend. A arquitetura não possui chamadas HTTP síncronas entre serviços de domínio — toda comunicação inter-serviço é via RabbitMQ. Portanto, a estratégia de resiliência foca nos canais reais: mensageria, banco de dados e o YARP. |
-| **Decisão** | **(1)** MassTransit `UseMessageRetry` com backoff exponencial no consumer (declarado na `ConsumerDefinition` — já documentado no [ADR-002](002-messaging.md)). **(2)** Reconexão automática ao RabbitMQ via configuração `AutoRecover` nativa do MassTransit. **(3)** Retry policy do Npgsql para falhas transitórias de banco, configurada via connection string. **(4)** `AddStandardResilienceHandler()` nos HttpClients globais via `ServiceDefaults` — usado pelo YARP para os backends internos e pelos health checks. |
+| **Contexto** | A comunicação assíncrona (MassTransit/RabbitMQ) e as conexões com PostgreSQL precisam de proteção contra falhas transitórias. Não existem chamadas HTTP síncronas entre serviços de domínio — toda comunicação inter-serviço é via RabbitMQ. A estratégia de resiliência foca nos canais reais: mensageria, banco de dados e YARP → backends. |
+| **Decisão** | (1) MassTransit `UseMessageRetry` com backoff exponencial no consumer (configurado na `ConsumerDefinition`). (2) Reconexão automática ao RabbitMQ via `AutoRecover` nativo do MassTransit. (3) Retry policy do Npgsql para falhas transitórias de banco. (4) `AddStandardResilienceHandler()` nos HttpClients globais via `ServiceDefaults`. |
 
 ## Detalhes
 
-A configuração de resiliência é centralizada no `ServiceDefaults` via `AddStandardResilienceHandler()` nos HttpClients globais (usado pelo YARP para backends internos), com: retry exponencial (3 tentativas, 500ms de delay), circuit breaker (failure ratio 50%, minimum throughput 10, timeout de 5s por tentativa). O Npgsql usa retry policy configurada na connection string (`Retry Max Count=3; Retry Connection Timeout=5`).
-
-> **Nota**: O retry do consumer MassTransit (`UseMessageRetry`) está configurado na `TransactionCreatedConsumerDefinition` ([ADR-002](002-messaging.md)). Após esgotar retries, mensagens são movidas para a error queue — ver [ADR-007](007-dlq.md).
-
-## Trade-offs
+### Por Canal de Comunicação
 
 | Canal | Mecanismo | Cobertura |
 |---|---|---|
-| Mensageria (MassTransit) | `UseMessageRetry` + error queue (DLQ) | Falhas transitórias + persistentes |
-| Banco (Npgsql) | Connection string retry policy | Falhas de conexão transitórias |
+| Mensageria (MassTransit consumer) | `UseMessageRetry` exponencial 5× (100ms → 30s, jitter 50ms) | `DbUpdateConcurrencyException` — conflitos de concorrência otimista |
+| Mensageria (exaustão de retries) | Error queue (`*_error`) + `Fault<T>` consumer | Falhas persistentes — veja [ADR-007](007-dlq.md) |
+| Mensageria (circuit breaker) | `UseCircuitBreaker` (15% trip, 5min reset) | Falha sustentada do downstream (DB down) |
+| RabbitMQ (conexão) | MassTransit `AutoRecover` | Reconexão automática após queda do broker |
+| Banco (Npgsql) | Connection string retry policy (`Retry Max Count=3`) | Falhas de conexão transitórias |
 | HTTP (YARP → backends) | `AddStandardResilienceHandler()` (Polly v8) | Retry + Circuit Breaker + Timeout |
-| RabbitMQ (conexão) | MassTransit `AutoRecover` | Reconexão automática |
+
+### Pipeline do Consumer MassTransit
+
+A `TransactionCreatedConsumerDefinition` configura middlewares na ordem LIFO (último registrado = mais externo na execução):
+
+1. `UsePartitioner(8)` — mais externo: roteia por `{MerchantId}:{ReferenceDate}`, elimina conflitos de concorrência entre consumers paralelos. Ver [ADR-005](005-concurrency.md).
+2. `UseCircuitBreaker` — protege contra cascata de falhas.
+3. `UseMessageRetry` — retry exponencial para casos residuais.
+4. `UseEntityFrameworkOutbox` — mais interno: gerencia a TX que envolve o consumer.
+
+### HttpClient (AddStandardResilienceHandler)
+
+Aplicado globalmente via `ServiceDefaults`:
+
+| Layer | Configuração |
+|---|---|
+| Rate limiter | 1.000 requisições concorrentes |
+| Total timeout | 30s |
+| Retry | 3× exponencial (2s, 4s, 8s) em 408/429/5xx |
+| Circuit breaker | 10% failure rate, 30s break |
+| Attempt timeout | 10s por tentativa |
 
 ## Consequências
 

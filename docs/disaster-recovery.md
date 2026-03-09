@@ -1,166 +1,137 @@
 # Plano de Disaster Recovery — CashFlow
 
-> **Última revisão:** 2026-03-08
-> **Responsável:** Gabriel Padilha
-> **Status:** Ativo
+> **Última revisão:** Março 2026
+> **Infraestrutura:** Azure Container Apps + PostgreSQL Flexible Server (brazilsouth)
 
 ## Índice
 
 1. [Objetivos de Recuperação (RPO/RTO)](#1-objetivos-de-recuperação-rporto)
-2. [Classificação de Incidentes](#2-classificação-de-incidentes)
-3. [Inventário de Componentes e Dependências](#3-inventário-de-componentes-e-dependências)
-4. [Mecanismos de Resiliência Implementados](#4-mecanismos-de-resiliência-implementados)
+2. [Mapa de Componentes e Dependências](#2-mapa-de-componentes-e-dependências)
+3. [Mecanismos de Resiliência Implementados](#3-mecanismos-de-resiliência-implementados)
+4. [Classificação de Incidentes](#4-classificação-de-incidentes)
 5. [Runbooks por Cenário de Falha](#5-runbooks-por-cenário-de-falha)
-   - [5.1 PostgreSQL — Banco Indisponível](#51-postgresql--banco-indisponível)
-   - [5.2 PostgreSQL — Corrupção de Dados / Restore PITR](#52-postgresql--corrupção-de-dados--restore-pitr)
-   - [5.3 RabbitMQ — Broker Indisponível](#53-rabbitmq--broker-indisponível)
-   - [5.4 Container App — Serviço em CrashLoop](#54-container-app--serviço-em-crashloop)
-   - [5.5 Deploy Falhado — Rollback de Revisão](#55-deploy-falhado--rollback-de-revisão)
-   - [5.6 Mensagens em Dead Letter Queue](#56-mensagens-em-dead-letter-queue)
-   - [5.7 Consistência Eventual Degradada](#57-consistência-eventual-degradada)
-   - [5.8 Gateway Indisponível (Perda Total de Ingress)](#58-gateway-indisponível-perda-total-de-ingress)
-   - [5.9 Perda de Região Azure (Disaster Regional)](#59-perda-de-região-azure-disaster-regional)
 6. [Alertas e Detecção](#6-alertas-e-detecção)
-7. [Escalation Matrix](#7-escalation-matrix)
-8. [Teste de Restore (Procedimento Mensal)](#8-teste-de-restore-procedimento-mensal)
-9. [Gaps Conhecidos e Roadmap](#9-gaps-conhecidos-e-roadmap)
+7. [Teste de Restore (Procedimento Mensal)](#7-teste-de-restore-procedimento-mensal)
+8. [Gaps Conhecidos e Roadmap](#8-gaps-conhecidos-e-roadmap)
 
 ---
 
 ## 1. Objetivos de Recuperação (RPO/RTO)
 
-| Métrica | Definição | Meta | Justificativa |
-|---|---|---|---|
-| **RPO** (Recovery Point Objective) | Perda máxima de dados aceita | **< 5 minutos** | WAL contínuo do Azure PostgreSQL Flexible Server |
-| **RTO** (Recovery Time Objective) | Tempo máximo de indisponibilidade | **< 4 horas** | Restore PITR + redeploy de Container Apps |
-| **Retenção de backup** | Período mínimo disponível | **35 dias (PITR) + snapshots manuais para 90 dias** | Conformidade LGPD + BCB |
+| Métrica | Meta | Justificativa |
+|---|---|---|
+| **RPO** (Recovery Point Objective) | **< 5 minutos** | WAL contínuo do Azure PostgreSQL Flexible Server |
+| **RTO** (Recovery Time Objective) | **< 4 horas** | Restore PITR + redeploy de Container Apps |
+| **Retenção de backup** | **35 dias (PITR)** | Configurado em `backupRetentionDays: 35` no Bicep |
 
 ### Onde os dados vivem
 
-| Dado | Localização | Durabilidade | RPO efetivo |
-|---|---|---|---|
-| Transactions (command side) | `transactions-db` (PostgreSQL) | ACID + WAL contínuo | < 5 min |
-| Daily Summaries (query side) | `consolidation-db` (PostgreSQL) | ACID + WAL contínuo | < 5 min |
-| Identidade/Usuários | `identity-db` (PostgreSQL) | ACID + WAL contínuo | < 5 min |
-| Mensagens em trânsito | RabbitMQ (AzureFile volume) | Durável (disk-backed) | Depende de LRS/ZRS |
-| Mensagens no Outbox | `transactions.OutboxMessage` (PostgreSQL) | ACID — mesmo backup do banco | < 5 min |
-| Cache de consolidation | Output Cache (in-memory) | Efêmero — reconstruído automaticamente | N/A |
+| Dado | Localização | RPO efetivo |
+|---|---|---|
+| Lançamentos (command side) | `transactions-db` (PostgreSQL) | < 5 min |
+| Consolidados diários (query side) | `consolidation-db` (PostgreSQL) | < 5 min |
+| Identidade/Usuários | `identity-db` (PostgreSQL) | < 5 min |
+| Mensagens no Outbox | `transactions.OutboxMessage` (PostgreSQL) | < 5 min |
+| Mensagens em trânsito no broker | RabbitMQ (Azure File volume) | Depende do volume LRS/ZRS |
+| Output Cache do Consolidation | In-memory (Kestrel) | N/A — efêmero, reconstruído automaticamente |
 
-**Nota crítica:** O Consolidation é um **read model derivado**. Mesmo em perda total, pode ser reconstruído a partir das transactions (republishing de eventos).
-
----
-
-## 2. Classificação de Incidentes
-
-| Severidade | Critério | Tempo de Resposta | Exemplos |
-|---|---|---|---|
-| **SEV-1 (Crítico)** | Sistema indisponível para todos os usuários; perda de dados iminente ou confirmada | **15 min** | PostgreSQL down; Gateway crashloop; corrupção de dados |
-| **SEV-2 (Alto)** | Funcionalidade principal degradada; dados não estão sendo perdidos | **1 hora** | Consumer parado (mensagens acumulando no outbox/RabbitMQ); latência > 5x normal |
-| **SEV-3 (Médio)** | Funcionalidade secundária impactada; workaround disponível | **4 horas** | DLQ com mensagens; health check intermitente; alerta de throughput baixo |
-| **SEV-4 (Baixo)** | Anomalia detectada sem impacto em usuários | **Próximo dia útil** | Log de warning elevado; métrica fora do baseline |
+O Consolidation é um **read model derivado**. Em perda total, pode ser reconstruído a partir das transactions via republishing de eventos.
 
 ---
 
-## 3. Inventário de Componentes e Dependências
+## 2. Mapa de Componentes e Dependências
 
 ```mermaid
 graph TD
-    subgraph ACA["Azure Container Apps Environment"]
-        GW["Gateway<br/>(YARP)"]
+    subgraph ACA["Azure Container Apps Environment (brazilsouth)"]
+        GW["Gateway (YARP)"]
         TX["Transactions API"]
         CO["Consolidation API"]
         ID["Identity API"]
-        RMQ["RabbitMQ<br/>(messaging)"]
-        PG_TX[("PostgreSQL<br/>(transactions)")]
-        PG_CO[("PostgreSQL<br/>(consolidation)")]
-        PG_ID[("PostgreSQL<br/>(identity)")]
-
-        GW -->|HTTP| TX
-        GW -->|HTTP| CO
-        GW -->|HTTP| ID
-        TX --> PG_TX
-        TX -->|outbox| RMQ
-        RMQ --> CO
-        CO --> PG_CO
-        ID --> PG_ID
+        RMQ["RabbitMQ (messaging)"]
     end
 
-    ACA -.->|telemetry| MON["Azure Monitor<br/>(App Insights + Logs)"]
+    subgraph PG["PostgreSQL Flexible Server (Standard_D2ds_v4)"]
+        PG_TX[("transactions-db")]
+        PG_CO[("consolidation-db")]
+        PG_ID[("identity-db")]
+    end
+
+    GW -->|HTTP interno| TX
+    GW -->|HTTP interno| CO
+    GW -->|HTTP interno| ID
+    TX --> PG_TX
+    TX -->|Bus Outbox| RMQ
+    RMQ -->|Consumer Inbox| CO
+    CO --> PG_CO
+    ID --> PG_ID
+
+    ACA -.->|OTLP telemetria| MON["Azure Monitor\n(App Insights + Log Analytics)"]
 ```
 
-### Dependências Críticas por Serviço
+### Impacto por dependência
 
 | Serviço | Depende de | Impacto se dependência falhar |
 |---|---|---|
-| **Gateway** | Transactions API, Consolidation API, Identity API | HTTP 503 para rotas afetadas (YARP passive health marks destination unhealthy) |
-| **Transactions API** | PostgreSQL (`transactions-db`), RabbitMQ | DB down → HTTP 500. RabbitMQ down → **aceita transactions normalmente** (outbox persiste no PostgreSQL) |
-| **Consolidation API** | PostgreSQL (`consolidation-db`), RabbitMQ | DB down → consumer falha, circuit breaker abre. Leituras HTTP 500. RabbitMQ down → consumer desconecta, mensagens acumulam no outbox do Transactions |
-| **Identity API** | PostgreSQL (`identity-db`) | DB down → login/registro falham (HTTP 500) |
-| **RabbitMQ** | Azure File Share (volume) | Volume down → perda de mensagens não persistidas; restart pode perder estado |
+| **Gateway** | Transactions, Consolidation, Identity | HTTP 503 nas rotas afetadas (YARP marca destination unhealthy) |
+| **Transactions API** | `transactions-db`, RabbitMQ | DB down → HTTP 500. RabbitMQ down → aceita transactions normalmente (outbox persiste no PostgreSQL) |
+| **Consolidation API** | `consolidation-db`, RabbitMQ | DB down → consumer falha, circuit breaker abre. RabbitMQ down → consumer desconecta, mensagens acumulam no outbox |
+| **Identity API** | `identity-db` | Login/registro falham (HTTP 500) |
 
 ---
 
-## 4. Mecanismos de Resiliência Implementados
+## 3. Mecanismos de Resiliência Implementados
 
-### 4.1 Consumer MassTransit — Pipeline de 4 camadas
-
-O consumer `TransactionCreatedConsumer` tem a pipeline de resiliência mais sofisticada do sistema. A ordem de execução (outermost first):
+### Pipeline do Consumer MassTransit
 
 ```mermaid
 graph LR
-    CB["CircuitBreaker"] --> DR["DelayedRedelivery"] --> MR["MessageRetry"] --> EFO["EntityFrameworkOutbox"] --> C["Consumer"]
+    CB["CircuitBreaker\n15% trip, 5min reset"] --> MR["MessageRetry\nExponential 5x\n100ms–30s"] --> EFO["EntityFrameworkOutbox\nInboxState + TX"] --> C["TransactionCreatedConsumer"]
 ```
 
 | Camada | Configuração | Falha tratada |
 |---|---|---|
 | **Circuit Breaker** | 15% trip threshold, 10 msgs mínimo, reset 5 min | Falha sustentada do downstream (DB down) |
-| **Delayed Redelivery** | 3 tentativas: 5 min, 15 min, 1 hora | Exaustão dos retries internos |
-| **Message Retry** | Exponential 5× (100ms → 30s), jitter 50ms. Apenas `DbUpdateConcurrencyException` | Conflito de concorrência otimista (`xmin`) |
-| **Consumer Outbox/Inbox** | EF Core inbox table para deduplicação | Mensagem duplicada (redelivery + retry) |
+| **Message Retry** | Exponencial 5× (100ms → 30s), jitter 50ms. Apenas `DbUpdateConcurrencyException` | Conflito de concorrência otimista (`xmin`) |
+| **Consumer Outbox/Inbox** | EF Core inbox table para deduplicação | Mensagem duplicada (redelivery, retry, crash do consumer) |
+| **Particionamento** | `UsePartitioner(8)` por `{MerchantId}:{Date}` | Elimina conflitos de concorrência entre consumers paralelos |
 
-**Após exaustão de todas as camadas:** mensagem vai para `<queue>_error` (dead letter queue padrão do MassTransit).
+Após exaustão de todas as camadas: mensagem vai para `<queue>_error` (DLQ nativa do MassTransit). `TransactionFaultConsumer` registra métrica e dispara alerta.
 
-### 4.2 Producer Outbox (Transactions API)
+### Bus Outbox (Transactions API)
 
 | Propriedade | Valor |
 |---|---|
-| `QueryDelay` | 100ms (polling do outbox) |
+| `QueryDelay` | 100ms |
 | `DuplicateDetectionWindow` | 30 minutos |
 | Lock provider | PostgreSQL advisory locks (`UsePostgres()`) |
 
-**Garantia:** Se o serviço crashar entre o `SaveChanges` e o publish para RabbitMQ, a mensagem sobrevive no `transactions.OutboxMessage` e é entregue no restart.
+Se o serviço crashar entre o `SaveChanges` e o publish para o broker, a mensagem sobrevive no `transactions.OutboxMessage` e é entregue no restart.
 
-### 4.3 Health Checks
+### Health Checks
 
-| Endpoint | Tipo | O que verifica |
+| Endpoint | Tipo | Verifica |
 |---|---|---|
-| `/health` | Readiness | Todos os checks registrados (DB connectivity via `SELECT 1`) |
-| `/alive` | Liveness | Apenas self-check (processo vivo) |
+| `/health` | Readiness | DB connectivity (SELECT 1) + RabbitMQ (MassTransit HealthCheck) |
+| `/alive` | Liveness | Self-check (processo vivo) |
 
-**Resolvido:** Health check de RabbitMQ configurado via MassTransit `ConfigureHealthCheckOptions` com `MinimalFailureStatus = Unhealthy` e tag `ready`. O `/health` agora retorna Unhealthy quando o broker está indisponível.
-
-### 4.4 YARP Gateway Health Monitoring
+### YARP Health Monitoring
 
 | Tipo | Intervalo | Comportamento |
 |---|---|---|
 | Active | 10s (timeout 5s) | Polls `/health` dos upstreams; marca unhealthy se falhar |
 | Passive | `TransportFailureRate` | Marca unhealthy por falhas de transporte; reativa após 2 min |
 
-### 4.5 HTTP Client Resilience (Standard Handler)
+---
 
-Aplicado globalmente a todos os `HttpClient` via `AddStandardResilienceHandler()`:
+## 4. Classificação de Incidentes
 
-| Layer | Default |
-|---|---|
-| Rate limiter | 1000 concurrent requests |
-| Total timeout | 30s |
-| Retry | 3× exponential (2s, 4s, 8s) em 408/429/5xx |
-| Circuit breaker | 10% failure rate, 30s break |
-| Attempt timeout | 10s por tentativa |
-
-### 4.6 Concorrência Otimista
-
-`DailySummary` usa `xmin` (PostgreSQL system column) como row version. Conflitos geram `DbUpdateConcurrencyException`, capturada pela camada de retry do MassTransit. O particionamento por `{MerchantId}:{Date}` (8 partições) minimiza conflitos serializando mensagens do mesmo merchant/data.
+| Severidade | Critério | Tempo de Resposta |
+|---|---|---|
+| **SEV-1 (Crítico)** | Sistema indisponível para todos; perda de dados iminente | 15 min |
+| **SEV-2 (Alto)** | Funcionalidade principal degradada; sem perda de dados | 1 hora |
+| **SEV-3 (Médio)** | Funcionalidade secundária impactada; workaround disponível | 4 horas |
+| **SEV-4 (Baixo)** | Anomalia sem impacto em usuários | Próximo dia útil |
 
 ---
 
@@ -168,26 +139,24 @@ Aplicado globalmente a todos os `HttpClient` via `AddStandardResilienceHandler()
 
 ### 5.1 PostgreSQL — Banco Indisponível
 
-**Alerta:** `cashflow-healthcheck-failure` (Sev 1) + `cashflow-http-5xx-rate` (Sev 2)
-
-**Impacto:** Todas as operações de escrita e leitura falham nos serviços afetados. Transactions API continua aceitando requests, mas retorna HTTP 500. Consumer abre circuit breaker após 15% de falha.
+**Severidade:** SEV-1
 
 **Diagnóstico:**
 
 ```bash
-# 1. Verificar status do PostgreSQL Flexible Server
+# Status do servidor
 az postgres flexible-server show \
   --name <server-name> \
-  --resource-group rg-<env-name> \
-  --query "{state:state, fullyQualifiedDomainName:fullyQualifiedDomainName}"
+  --resource-group rg-cashflow-prod \
+  --query "{state:state, fqdn:fullyQualifiedDomainName}"
 
-# 2. Verificar conectividade a partir do Container App
+# Conectividade a partir do Container App
 az containerapp exec \
   --name transactions \
-  --resource-group rg-<env-name> \
+  --resource-group rg-cashflow-prod \
   --command "pg_isready -h <hostname>"
 
-# 3. Verificar métricas do servidor
+# Métricas do servidor
 az monitor metrics list \
   --resource <postgres-resource-id> \
   --metrics cpu_percent memory_percent active_connections storage_percent \
@@ -196,102 +165,87 @@ az monitor metrics list \
 
 **Recuperação:**
 
-1. **Storage cheio:** Aumentar storage via Portal ou CLI (`az postgres flexible-server update --storage-size <GB>`). O PostgreSQL para de aceitar escritas quando o storage atinge 100%.
-2. **CPU/Memória:** Escalar o SKU temporariamente (`az postgres flexible-server update --sku-name Standard_D4ds_v4`). O SKU atual de produção é `Standard_D2ds_v4` (General Purpose, 2 vCPUs dedicados).
-3. **Falha de zona:** Se HA Zone Redundant estiver habilitado, failover automático ocorre em ~60-120s. Se não, aguardar recovery da plataforma (~5-15 min).
-4. **Servidor irrecuperável:** Executar restore PITR (vide [Runbook 5.2](#52-postgresql--corrupção-de-dados--restore-pitr)).
+1. **Storage cheio:** `az postgres flexible-server update --storage-size <GB>`. PostgreSQL para de aceitar writes ao atingir 100%.
+2. **CPU/Memória saturados:** `az postgres flexible-server update --sku-name Standard_D4ds_v4` (temporário).
+3. **Failover de zona:** Com HA Zone Redundant habilitado, failover automático ocorre em ~60–120s.
+4. **Servidor irrecuperável:** Executar restore PITR (vide [5.2](#52-postgresql--restore-pitr)).
 
 **Pós-incidente:**
-- Mensagens no outbox (`transactions.OutboxMessage`) serão entregues automaticamente quando o DB voltar.
-- Consumer MassTransit reconecta automaticamente quando o circuit breaker fecha (após 5 min de reset).
-- Output cache do Consolidation será repopulado automaticamente nas próximas requests.
+- Mensagens no outbox são entregues automaticamente quando o DB volta.
+- Consumer MassTransit reconecta quando o circuit breaker fecha (5 min de reset).
+- Output cache repopulado automaticamente nas próximas requests.
 
 ---
 
-### 5.2 PostgreSQL — Corrupção de Dados / Restore PITR
+### 5.2 PostgreSQL — Restore PITR
 
-**Alerta:** Geralmente detectado por anomalias nos dados, não por alertas automáticos.
+**Severidade:** SEV-1
 
-**Impacto:** Dados inconsistentes. Pode afetar saldo consolidado, transactions ou identidade.
-
-**Procedimento de Restore:**
+**Procedimento:**
 
 ```bash
 # 1. Identificar o ponto no tempo ANTES da corrupção
-# Usar Application Insights para encontrar o timestamp do último estado bom:
 az monitor app-insights query \
   --app <app-insights-name> \
   --analytics-query "customMetrics | where name == 'cashflow.transactions.created' | summarize count() by bin(timestamp, 1m) | order by timestamp desc | take 60"
 
-# 2. Criar novo servidor a partir de PITR
+# 2. Criar servidor a partir de PITR
 az postgres flexible-server restore \
-  --resource-group rg-<env-name> \
-  --name <new-server-name> \
-  --source-server /subscriptions/<sub-id>/resourceGroups/rg-<env-name>/providers/Microsoft.DBforPostgreSQL/flexibleServers/<original-server-name> \
+  --resource-group rg-cashflow-prod \
+  --name cashflow-db-restored \
+  --source-server /subscriptions/<sub-id>/resourceGroups/rg-cashflow-prod/providers/Microsoft.DBforPostgreSQL/flexibleServers/<original-server> \
   --restore-point-in-time "2026-03-06T10:00:00Z"
 
-# 3. Validar dados no servidor restaurado
-psql "host=<new-server>.postgres.database.azure.com dbname=transactions-db" \
+# 3. Validar integridade dos dados
+psql "host=cashflow-db-restored.postgres.database.azure.com dbname=transactions-db" \
   -c "SELECT COUNT(*) FROM transactions.transactions;"
-psql "host=<new-server>.postgres.database.azure.com dbname=consolidation-db" \
+
+psql "host=cashflow-db-restored.postgres.database.azure.com dbname=consolidation-db" \
   -c "SELECT date, total_credits, total_debits, transaction_count FROM consolidation.daily_summary ORDER BY date DESC LIMIT 10;"
 
-# 4. Comparar contagens com o servidor original (se acessível)
-# Se os dados no restored server estão corretos, migrar o DNS/connection string.
-
-# 5. Atualizar connection strings nos Container Apps
-# Opção A: atualizar o Bicep e fazer azd deploy
-# Opção B: atualizar via CLI (mais rápido para emergência)
+# 4. Atualizar connection strings nos Container Apps
 az containerapp update \
   --name transactions \
-  --resource-group rg-<env-name> \
-  --set-env-vars "ConnectionStrings__transactions-db=Host=<new-server>.postgres.database.azure.com;..."
+  --resource-group rg-cashflow-prod \
+  --set-env-vars "ConnectionStrings__transactions-db=Host=cashflow-db-restored.postgres.database.azure.com;..."
 
-# 6. Reiniciar todos os serviços para reconectar
-az containerapp revision restart \
-  --name transactions --resource-group rg-<env-name> --revision <active-revision>
-az containerapp revision restart \
-  --name consolidation --resource-group rg-<env-name> --revision <active-revision>
-az containerapp revision restart \
-  --name identity --resource-group rg-<env-name> --revision <active-revision>
+# 5. Reiniciar serviços
+for svc in transactions consolidation identity; do
+  az containerapp revision restart \
+    --name $svc \
+    --resource-group rg-cashflow-prod \
+    --revision $(az containerapp show --name $svc --resource-group rg-cashflow-prod --query "properties.latestReadyRevisionName" -o tsv)
+done
 ```
 
-**RTO estimado:** 2-4 horas (dependendo do tamanho do banco e validação).
+**RTO estimado:** 2–4 horas.
 
 ---
 
 ### 5.3 RabbitMQ — Broker Indisponível
 
-**Alerta:** `cashflow-consistency-delta` (Sev 1) — delta entre transactions criadas e eventos processados cresce.
+**Severidade:** SEV-2
 
 **Impacto:**
-- **Transactions API:** Continua aceitando e persistindo transactions normalmente. Mensagens ficam no `OutboxMessage` table (PostgreSQL). **Nenhuma perda de dados.**
-- **Consolidation API:** Para de processar eventos. Saldos consolidados ficam desatualizados (eventual consistency gap cresce).
-- **Usuários:** Podem criar transactions, mas consultas de consolidação retornam dados defasados.
+- Transactions API: continua funcionando. Mensagens acumulam no `transactions.OutboxMessage`. Sem perda de dados.
+- Consolidation API: para de processar eventos. Saldos consolidados ficam desatualizados.
 
 **Diagnóstico:**
 
 ```bash
-# 1. Verificar Container App do RabbitMQ
+# Status do Container App
 az containerapp show \
   --name messaging \
-  --resource-group rg-<env-name> \
-  --query "{runningStatus:properties.runningStatus, latestRevision:properties.latestReadyRevisionName}"
+  --resource-group rg-cashflow-prod \
+  --query "{runningStatus:properties.runningStatus, revision:properties.latestReadyRevisionName}"
 
-# 2. Verificar logs do container
+# Logs do container
 az containerapp logs show \
   --name messaging \
-  --resource-group rg-<env-name> \
+  --resource-group rg-cashflow-prod \
   --tail 100
 
-# 3. Verificar volume (Azure File Share)
-az storage share show \
-  --name <share-name> \
-  --account-name <storage-account> \
-  --query "{quota:properties.quota, lastModified:properties.lastModified}"
-
-# 4. Contar mensagens acumuladas no outbox
-# (via Application Insights ou query direta no DB)
+# Mensagens acumuladas no outbox
 az monitor app-insights query \
   --app <app-insights-name> \
   --analytics-query "customMetrics | where name == 'cashflow.transactions.created' | summarize sum(valueSum) by bin(timestamp, 5m) | order by timestamp desc | take 12"
@@ -299,143 +253,101 @@ az monitor app-insights query \
 
 **Recuperação:**
 
-1. **Container crashloop:** Reiniciar a Container App.
-   ```bash
-   az containerapp revision restart \
-     --name messaging --resource-group rg-<env-name> --revision <active-revision>
-   ```
+```bash
+# Container em crashloop: reiniciar
+az containerapp revision restart \
+  --name messaging \
+  --resource-group rg-cashflow-prod \
+  --revision <active-revision>
 
-2. **Volume corrompido:** Recriar o container (o RabbitMQ repopula a partir dos publishers).
-   ```bash
-   # Deletar e recriar via azd
-   azd deploy --no-prompt
-   ```
+# Volume corrompido: recriar via azd
+azd deploy --no-prompt
+```
 
-3. **Após recovery do broker:**
-   - O Bus Outbox Delivery Service (background service no Transactions API) detecta automaticamente que o broker voltou e começa a entregar mensagens acumuladas no `OutboxMessage`.
-   - O consumer MassTransit reconecta automaticamente.
-   - O gap de consistência se fecha gradualmente conforme mensagens acumuladas são processadas.
-
-**Nota:** Mensagens que já estavam no RabbitMQ (queue) e não no outbox podem ser perdidas se o volume for irrecuperável. O outbox garante que todas as novas mensagens têm durabilidade no PostgreSQL.
+Após o broker voltar, o Delivery Service entrega automaticamente as mensagens acumuladas no `OutboxMessage`. O gap de consistência fecha gradualmente.
 
 ---
 
-### 5.4 Container App — Serviço em CrashLoop
+### 5.4 Container App — CrashLoop
 
-**Alerta:** `cashflow-healthcheck-failure` (Sev 1)
+**Severidade:** SEV-1
 
 **Diagnóstico:**
 
 ```bash
-# 1. Listar revisões e seus status
+# Listar revisões e status
 az containerapp revision list \
   --name <service-name> \
-  --resource-group rg-<env-name> \
-  --query "[].{name:name, active:properties.active, runningState:properties.runningState, createdTime:properties.createdTime}" \
+  --resource-group rg-cashflow-prod \
+  --query "[].{name:name, active:properties.active, state:properties.runningState}" \
   -o table
 
-# 2. Ver logs da revisão com crash
+# Logs da revisão
 az containerapp logs show \
   --name <service-name> \
-  --resource-group rg-<env-name> \
+  --resource-group rg-cashflow-prod \
   --tail 200
-
-# 3. Verificar se é problema de configuração/secrets
-az containerapp show \
-  --name <service-name> \
-  --resource-group rg-<env-name> \
-  --query "properties.template.containers[0].env[].name" -o tsv
 ```
 
 **Recuperação:**
 
-1. **Bug no código:** Rollback para revisão anterior (vide [Runbook 5.5](#55-deploy-falhado--rollback-de-revisão)).
-2. **Dependência indisponível (DB, broker):** Resolver a dependência primeiro. O container reinicia automaticamente (`restartPolicy: Always`).
-3. **Out of memory / CPU:** Ajustar resources no Bicep ou temporariamente via CLI:
-   ```bash
-   az containerapp update \
-     --name <service-name> \
-     --resource-group rg-<env-name> \
-     --cpu 1.0 --memory 2.0Gi
-   ```
-4. **Secret incorreto/expirado:** Atualizar via CLI e reiniciar:
-   ```bash
-   az containerapp secret set \
-     --name <service-name> \
-     --resource-group rg-<env-name> \
-     --secrets "jwt--signingkey=<new-value>"
-   az containerapp revision restart \
-     --name <service-name> --resource-group rg-<env-name> --revision <revision>
-   ```
+1. **Bug no código:** Rollback para revisão anterior (vide [5.5](#55-deploy-falhado--rollback)).
+2. **Dependência indisponível:** Resolver dependência primeiro. Container reinicia automaticamente.
+3. **OOM/CPU:** `az containerapp update --name <svc> --resource-group rg-cashflow-prod --cpu 1.0 --memory 2.0Gi`
+4. **Secret incorreto:** `az containerapp secret set --name <svc> --resource-group rg-cashflow-prod --secrets "key=value"` + restart da revisão.
 
 ---
 
-### 5.5 Deploy Falhado — Rollback de Revisão
+### 5.5 Deploy Falhado — Rollback
 
-**Alerta:** `cashflow-healthcheck-failure` (Sev 1) + `cashflow-http-5xx-rate` (Sev 2) — imediatamente após um deploy.
+**Severidade:** SEV-1/SEV-2
 
-**Contexto:** Todos os Container Apps usam `activeRevisionsMode: 'Single'`. Cada deploy cria uma nova revisão e roteia 100% do tráfego para ela imediatamente. Não há blue/green automático.
+Todos os Container Apps usam `activeRevisionsMode: Single`. Cada deploy cria nova revisão e roteia 100% do tráfego imediatamente.
 
-**Rollback — Opção A: Re-deploy do commit anterior (recomendado)**
+**Opção A — Re-deploy do commit anterior (recomendado):**
 
 ```bash
-# 1. Identificar o último commit bom
 git log --oneline -10
-
-# 2. Fazer checkout e re-deploy
 git checkout <last-good-commit>
 azd deploy --no-prompt
-
-# 3. Voltar para main
 git checkout main
 ```
 
-**Rollback — Opção B: Reativar revisão anterior via CLI (mais rápido)**
+**Opção B — Reativar revisão anterior via CLI (mais rápido):**
 
 ```bash
-# 1. Listar revisões
+# Listar revisões
 az containerapp revision list \
   --name <service-name> \
-  --resource-group rg-<env-name> \
+  --resource-group rg-cashflow-prod \
   -o table
 
-# 2. Mudar para Multiple revision mode (necessário para traffic splitting)
+# Mudar para modo multiple (necessário para traffic splitting)
 az containerapp revision set-mode \
-  --name <service-name> \
-  --resource-group rg-<env-name> \
-  --mode multiple
+  --name <service-name> --resource-group rg-cashflow-prod --mode multiple
 
-# 3. Rotear 100% do tráfego para a revisão anterior
+# Rotear 100% para a revisão anterior
 az containerapp ingress traffic set \
-  --name <service-name> \
-  --resource-group rg-<env-name> \
+  --name <service-name> --resource-group rg-cashflow-prod \
   --revision-weight <old-revision>=100 <bad-revision>=0
 
-# 4. (Após estabilizar) Voltar para Single revision mode
+# Após estabilizar, voltar para single
 az containerapp revision set-mode \
-  --name <service-name> \
-  --resource-group rg-<env-name> \
-  --mode single
+  --name <service-name> --resource-group rg-cashflow-prod --mode single
 ```
-
-**Rollback de infraestrutura Bicep:** Não há `azd rollback`. Reverter mudanças no Bicep via git e re-executar `azd provision`.
 
 ---
 
 ### 5.6 Mensagens em Dead Letter Queue
 
-**Alerta:** `cashflow-dlq-depth` (Sev 2)
+**Severidade:** SEV-2
 
-**Contexto:** Mensagens chegam na DLQ (`<queue>_error`) após exaustão de todo o pipeline de resiliência: 5 retries exponenciais × 3 redeliveries (5min, 15min, 1h). Isso significa que a mensagem falhou por **~1h20min** de tentativas.
+Mensagens chegam na DLQ (`<queue>_error`) após esgotar 5 retries exponenciais (~30s total de tentativas).
 
 **Diagnóstico:**
 
 ```bash
-# 1. Verificar a DLQ no RabbitMQ Management UI
-# Em dev local: http://localhost:15672 (guest/guest)
-# Em produção: port-forward via az containerapp exec ou Azure Portal console
-
-# 2. Identificar a mensagem e o erro via Application Insights
+# Identificar erro via Application Insights
 az monitor app-insights query \
   --app <app-insights-name> \
   --analytics-query "
@@ -449,28 +361,22 @@ az monitor app-insights query \
 
 **Recuperação:**
 
-1. **Corrigir a causa raiz** (bug no consumer, schema mismatch, etc.)
-2. **Reprocessar mensagens da DLQ:**
-   ```bash
-   # Via RabbitMQ Management API: mover mensagens de _error de volta para a fila principal
-   # No RabbitMQ Management UI: Queue > _error > Move messages > destination queue
-   ```
-3. **Se a mensagem é irrecuperável:** Mover para uma fila de arquivo morto e documentar. Verificar se o `DailySummary` precisa de correção manual.
-
-**Validação pós-reprocessamento:**
+1. Corrigir a causa raiz (bug no consumer, schema mismatch, dado inválido).
+2. Reprocessar mensagens via RabbitMQ Management UI: Queue `<queue>_error` → Move messages → fila original.
+3. Validar integridade do saldo consolidado:
 
 ```sql
--- Verificar se o saldo consolidado está correto para o merchant/data afetado
+-- Saldo real do consolidado
 SELECT date, total_credits, total_debits, transaction_count
 FROM consolidation.daily_summary
 WHERE merchant_id = '<affected-merchant>'
   AND date = '<affected-date>';
 
--- Comparar com a soma real das transactions
+-- Comparar com soma real das transactions
 SELECT
-  SUM(CASE WHEN type = 'Credit' THEN amount ELSE 0 END) as expected_credits,
-  SUM(CASE WHEN type = 'Debit' THEN amount ELSE 0 END) as expected_debits,
-  COUNT(*) as expected_count
+  SUM(CASE WHEN type = 'Credit' THEN value_amount ELSE 0 END) AS expected_credits,
+  SUM(CASE WHEN type = 'Debit' THEN value_amount ELSE 0 END) AS expected_debits,
+  COUNT(*) AS expected_count
 FROM transactions.transactions
 WHERE merchant_id = '<affected-merchant>'
   AND reference_date = '<affected-date>';
@@ -480,241 +386,158 @@ WHERE merchant_id = '<affected-merchant>'
 
 ### 5.7 Consistência Eventual Degradada
 
-**Alerta:** `cashflow-consistency-delta` (Sev 1) — delta > 100 eventos por 10+ min.
+**Severidade:** SEV-1 (delta > 100 eventos por 10+ min)
 
-**Contexto:** O sistema é event-driven (CQRS). O Consolidation API é um read model derivado do Transactions API. Algum atraso é esperado; o alerta dispara quando o gap cresce além do normal.
-
-**Causas prováveis:**
+**Causas e diagnóstico:**
 
 | Causa | Diagnóstico | Ação |
 |---|---|---|
-| Consumer parado | Verificar logs do Consolidation API | Reiniciar container |
+| Consumer parado | Logs do Consolidation API | Reiniciar container |
 | Circuit breaker aberto | Buscar "circuit breaker" nos logs | Resolver causa raiz do downstream |
-| RabbitMQ lento | Verificar métricas do messaging container | Escalar ou reiniciar |
-| PostgreSQL lento | Verificar CPU/connections do DB | Escalar SKU |
-| Backlog de outbox | Verificar `OutboxMessage` count no DB | Aguardar drain; aumentar `MessageDeliveryLimit` se necessário |
+| PostgreSQL lento | CPU/connections do DB | Escalar SKU |
+| Backlog de outbox | Count de `OutboxMessage` no DB | Aguardar drain; verificar Delivery Service |
 
-**Recuperação:**
-1. Resolver a causa raiz (ver runbooks específicos acima).
-2. O backlog se resolve automaticamente — o consumer processa mensagens acumuladas assim que a causa é removida.
-3. Monitorar o delta via KQL:
-   ```
-   let created = customMetrics | where name == "cashflow.transactions.created" | summarize Created = sum(valueSum) by bin(timestamp, 5m);
-   let processed = customMetrics | where name == "cashflow.consolidation.events_processed" | summarize Processed = sum(valueSum) by bin(timestamp, 5m);
-   created | join kind=leftouter processed on timestamp | extend Delta = Created - coalesce(Processed, 0) | render timechart
-   ```
+**Monitoramento do delta via KQL:**
+
+```
+let created = customMetrics | where name == "cashflow.transactions.created" | summarize Created = sum(valueSum) by bin(timestamp, 5m);
+let processed = customMetrics | where name == "cashflow.consolidation.events_processed" | summarize Processed = sum(valueSum) by bin(timestamp, 5m);
+created | join kind=leftouter processed on timestamp | extend Delta = Created - coalesce(Processed, 0) | render timechart
+```
 
 ---
 
-### 5.8 Gateway Indisponível (Perda Total de Ingress)
+### 5.8 Gateway Indisponível
 
-**Alerta:** Nenhum request chegando ao Application Insights + reclamações de usuários.
-
-**Impacto:** Perda total de acesso ao sistema. Nenhuma API funciona.
-
-**Diagnóstico:**
+**Severidade:** SEV-1
 
 ```bash
-# 1. Verificar o Gateway Container App
+# Status do Gateway
 az containerapp show \
   --name gateway \
-  --resource-group rg-<env-name> \
-  --query "{fqdn:properties.configuration.ingress.fqdn, runningStatus:properties.runningStatus}"
+  --resource-group rg-cashflow-prod \
+  --query "{fqdn:properties.configuration.ingress.fqdn, status:properties.runningStatus}"
 
-# 2. Verificar DNS resolution
-nslookup <gateway-fqdn>
-
-# 3. Testar health do gateway diretamente
+# Testar health diretamente
 curl -v https://<gateway-fqdn>/alive
 ```
 
-**Recuperação:**
-1. **Container crashloop:** Verificar logs, rollback se necessário (vide [5.5](#55-deploy-falhado--rollback-de-revisão)).
-2. **Ingress misconfigured:** Verificar configuração via CLI e corrigir.
-3. **Container Apps Environment down:** Verificar status da plataforma no [Azure Status](https://status.azure.com/).
+Verificar [Azure Status](https://status.azure.com/) se o problema for da plataforma.
 
 ---
 
 ### 5.9 Perda de Região Azure (Disaster Regional)
 
-**Impacto:** Perda total de todos os serviços. RTO alvo: < 4 horas.
+**Severidade:** SEV-1 | RTO alvo: < 4 horas
 
-**Pré-requisitos (devem estar habilitados antes):**
-- [ ] `geoRedundantBackup: 'Enabled'` no PostgreSQL Flexible Server
-- [ ] ACR com geo-replicação (`Premium` SKU)
-- [ ] Documentação de `azd` e infra parametrizável por região
+**Pré-requisitos obrigatórios:**
+- `geoRedundantBackup: Enabled` no PostgreSQL Flexible Server
+- ACR com geo-replicação (Premium SKU)
 
 **Procedimento:**
 
-1. **Ativar provisioning na região secundária:**
-   ```bash
-   # Atualizar variáveis de ambiente do azd
-   azd env set AZURE_LOCATION "<secondary-region>"
-   azd provision --no-prompt
-   ```
+```bash
+# 1. Provisionar na região secundária
+azd env set AZURE_LOCATION "<secondary-region>"
+azd provision --no-prompt
 
-2. **Restaurar PostgreSQL a partir do geo-backup:**
-   ```bash
-   az postgres flexible-server geo-restore \
-     --resource-group rg-<env-name>-dr \
-     --name <server-name>-dr \
-     --source-server /subscriptions/<sub-id>/resourceGroups/rg-<env-name>/providers/Microsoft.DBforPostgreSQL/flexibleServers/<original-server-name> \
-     --location <secondary-region>
-   ```
+# 2. Restaurar PostgreSQL a partir do geo-backup
+az postgres flexible-server geo-restore \
+  --resource-group rg-cashflow-dr \
+  --name cashflow-db-dr \
+  --source-server /subscriptions/<sub-id>/resourceGroups/rg-cashflow-prod/providers/Microsoft.DBforPostgreSQL/flexibleServers/<original-server> \
+  --location <secondary-region>
 
-3. **Deploy dos serviços:**
-   ```bash
-   azd deploy --no-prompt
-   ```
+# 3. Deploy dos serviços
+azd deploy --no-prompt
 
-4. **Atualizar DNS / Traffic Manager** para apontar para o novo gateway.
-
-5. **Validar:** Executar smoke tests manuais (criar transaction, verificar consolidation).
-
-**Nota:** Este procedimento requer preparação prévia. Ver seção [9. Gaps Conhecidos](#9-gaps-conhecidos-e-roadmap).
+# 4. Atualizar DNS para o novo gateway FQDN
+# 5. Validar: criar transaction e verificar consolidation
+```
 
 ---
 
 ## 6. Alertas e Detecção
 
-### Alertas Configurados (Azure Monitor Scheduled Query Rules)
+### Alertas Configurados (Azure Monitor)
 
-| Alerta | Sev | Trigger | Ação |
+| Alerta | Sev | Trigger | Canal |
 |---|---|---|---|
-| `cashflow-healthcheck-failure` | **1** | Serviços com health check falhando em janelas de 5 min (2 de 5 janelas avaliadas) | Email |
-| `cashflow-consistency-delta` | **1** | Delta created vs processed > 100 por 10+ min | Email |
-| `cashflow-dlq-depth` | **2** | DLQ depth > 0 em qualquer janela | Email |
-| `cashflow-consolidation-latency-p95` | **2** | p95 > 200ms por 5+ min consecutivos | Email |
-| `cashflow-ingestion-rate-low` | **2** | < 50 events/s por 3 de 5 janelas | Email |
-| `cashflow-eventual-consistency-p95` | **2** | p95 > 5000ms por 5+ min consecutivos | Email |
-| `cashflow-http-5xx-rate` | **2** | 5xx rate > 5% (min 10 req/min) por 5+ min | Email |
-| `cashflow-consolidation-throughput-low` | **3** | < 50 req/s por 3 de 5 janelas | Log only (sem email) |
+| `cashflow-healthcheck-failure` | 1 | Health check falhando por 2 de 5 janelas de 5 min | Email |
+| `cashflow-consistency-delta` | 1 | Delta created vs processed > 100 por 10+ min | Email |
+| `cashflow-dlq-depth` | 2 | `cashflow.messaging.dlq_faults > 0` em qualquer janela | Email |
+| `cashflow-consolidation-latency-p95` | 2 | p95 > 200ms por 5+ min consecutivos | Email |
+| `cashflow-http-5xx-rate` | 2 | 5xx rate > 5% (min 10 req/min) por 5+ min | Email |
+| `cashflow-eventual-consistency-p95` | 2 | p95 > 5000ms por 5+ min | Email |
+| `cashflow-ingestion-rate-low` | 2 | < 50 events/s por 3 de 5 janelas | Email |
+| `cashflow-consolidation-throughput-low` | 3 | < 50 req/s por 3 de 5 janelas | Log only |
 
-### Gaps de Alertas
+### Gaps de Alertas (roadmap)
 
-| Gap | Impacto | Recomendação |
+| Gap | Risco | Recomendação |
 |---|---|---|
-| Sem alerta de CPU/storage do PostgreSQL | Pode ficar sem disco sem aviso | Adicionar alert rule para `storage_percent > 80%` |
-| Sem alerta de replica count dos Container Apps | Não detecta scale failure | Adicionar alert para `replicaCount < 1` |
-| Sem alerta de restart do RabbitMQ | Perda silenciosa de estado do broker | Adicionar alert para container restart count |
-| Alertas condicionais (`if alert_email_address`) | Deploy sem email = sem alertas | Tornar email obrigatório ou usar fallback |
-| Canal único (email) | Resposta lenta fora de horário | Integrar PagerDuty/webhook para Sev-1 |
+| Sem alerta de CPU/storage do PostgreSQL | Disco cheio sem aviso | Adicionar alert para `storage_percent > 80%` |
+| Sem alerta de restart do RabbitMQ | Perda silenciosa de estado do broker | Alert para container restart count |
+| Canal único (email) | Resposta lenta fora de horário | Integrar PagerDuty/webhook para SEV-1 |
 
 ---
 
-## 7. Escalation Matrix
+## 7. Teste de Restore (Procedimento Mensal)
 
-| Severidade | Primeiro Contato | Escalação (se não resolvido em) | Comunicação |
-|---|---|---|---|
-| **SEV-1** | Engenheiro on-call | Líder técnico em 30 min; CTO em 1 hora | Canal de incidentes (Slack/Teams) atualizado a cada 15 min |
-| **SEV-2** | Engenheiro on-call | Líder técnico em 2 horas | Canal de incidentes atualizado a cada 30 min |
-| **SEV-3** | Engenheiro designado | Líder técnico em 1 dia útil | Ticket no backlog |
-| **SEV-4** | Próxima sprint planning | — | Registro no backlog |
+> Um backup não testado não é um backup.
 
-**Contatos (preencher conforme a equipe):**
+**Checklist:**
 
-| Papel | Nome | Contato |
-|---|---|---|
-| On-call primário | _A definir_ | _A definir_ |
-| Líder técnico | _A definir_ | _A definir_ |
-| DBA / Infraestrutura | _A definir_ | _A definir_ |
-| CTO | _A definir_ | _A definir_ |
+- [ ] Data do teste: ____
+- [ ] Executado por: ____
 
----
+```bash
+# 1. Provisionar servidor de teste a partir do backup do dia anterior
+az postgres flexible-server restore \
+  --resource-group rg-cashflow-restore-test \
+  --name cashflow-restore-$(date +%Y%m%d) \
+  --source-server <production-server-name> \
+  --restore-point-in-time "$(date -u -v-1d '+%Y-%m-%dT%H:%M:%SZ')"
 
-## 8. Teste de Restore (Procedimento Mensal)
+# 2. Validar integridade
+psql "host=cashflow-restore-$(date +%Y%m%d).postgres.database.azure.com dbname=transactions-db" -c "SELECT COUNT(*) FROM transactions.transactions;"
+psql "host=cashflow-restore-$(date +%Y%m%d).postgres.database.azure.com dbname=consolidation-db" -c "SELECT merchant_id, date, total_credits, total_debits FROM consolidation.daily_summary ORDER BY date DESC LIMIT 10;"
+psql "host=cashflow-restore-$(date +%Y%m%d).postgres.database.azure.com dbname=transactions-db" -c "SELECT COUNT(*) FROM transactions.\"OutboxMessage\" WHERE delivered IS NULL;"
 
-> **Um backup não testado não é um backup.**
+# 3. Limpar recursos de teste
+az group delete --name rg-cashflow-restore-test --yes --no-wait
+```
 
-### Checklist Mensal
+**Resultado esperado:**
 
-- [ ] **Data do teste:** ____
-- [ ] **Executado por:** ____
-
-### Passos
-
-1. **Provisionar servidor PostgreSQL Flexible Server isolado:**
-   ```bash
-   az postgres flexible-server restore \
-     --resource-group rg-<env-name>-restore-test \
-     --name cashflow-restore-test-$(date +%Y%m%d) \
-     --source-server <production-server-name> \
-     --restore-point-in-time "$(date -u -v-1d '+%Y-%m-%dT%H:%M:%SZ')"
-   ```
-
-2. **Validar integridade dos dados:**
-   ```sql
-   -- Contagem de transactions
-   SELECT COUNT(*) FROM transactions.transactions;
-
-   -- Verificar saldos de referência (comparar com produção)
-   SELECT merchant_id, date, total_credits, total_debits, transaction_count
-   FROM consolidation.daily_summary
-   WHERE date >= CURRENT_DATE - INTERVAL '7 days'
-   ORDER BY merchant_id, date;
-
-   -- Verificar integridade do outbox (devem ser 0 ou poucas mensagens pendentes)
-   SELECT COUNT(*) FROM transactions."OutboxMessage" WHERE delivered IS NULL;
-   ```
-
-3. **Medir o RTO real:**
-   - Timestamp de início do restore: ____
-   - Timestamp de dados disponíveis: ____
-   - **RTO medido:** ____
-
-4. **Limpar recursos de teste:**
-   ```bash
-   az group delete --name rg-<env-name>-restore-test --yes --no-wait
-   ```
-
-5. **Documentar resultado:**
-   - RTO medido vs. meta (< 4 horas): ____
-   - Dados íntegros: Sim / Não
-   - Observações: ____
+| Item | Meta |
+|---|---|
+| RTO medido | < 4 horas |
+| Dados íntegros | Sim |
+| Mensagens pendentes no outbox | 0 ou poucas |
 
 ---
 
-## 9. Gaps Conhecidos e Roadmap
+## 8. Gaps Conhecidos e Roadmap
 
-### Infraestrutura (Bicep)
+### Infraestrutura
 
 | Gap | Risco | Ação | Prioridade | Status |
 |---|---|---|---|---|
-| ~~SKU `Standard_B1ms` (Burstable)~~ | ~~Throttling sob carga~~ | Migrado para `Standard_D2ds_v4` (General Purpose) + PgBouncer built-in (porta 6432). Ver [ADR-012](adr/012-postgresql-scaling.md) | **P1** | **Resolvido** |
-| `AllowAllAzureIps` firewall rule | Qualquer serviço Azure pode acessar o DB | Private endpoint + VNet injection | **P2** | Aberto |
-| RabbitMQ single-replica em LRS | SPOF na mensageria | Migrar para Azure Service Bus ou ZRS | **P2** | Aberto |
-| ACR Basic (sem geo-replicação) | Image pull falha se região cair | Upgrade para Premium | **P2** | Aberto |
-| Container Apps sem health probes Bicep | Plataforma não detecta unhealthy via /health e /alive | Adicionar probes nos módulos Bicep | **P1** | Resolvido |
-| Sem VNet injection | Comunicação multitenant | Configurar VNet dedicada | **P2** | Aberto |
-
-#### Resolvido no Bicep (postgres.module.bicep)
-
-| Item | Antes | Depois |
-|---|---|---|
-| `backupRetentionDays` | 7 | **35** (parametrizável) |
-| `geoRedundantBackup` | `Disabled` | **`Enabled`** (parametrizável) |
-| `autoGrow` | Não configurado | **`Enabled`** |
-
-> **Nota:** `highAvailabilityMode` permanece como `Disabled` por default. Com o SKU atual `Standard_D2ds_v4` (General Purpose), é possível habilitar `highAvailabilityMode: 'ZoneRedundant'` no Bicep para HA cross-zone (~$250/mês total). Avaliar custo-benefício conforme criticidade.
-
-### Aplicação
-
-| Gap | Risco | Ação | Prioridade | Status |
-|---|---|---|---|---|
-| ~~Sem health check de RabbitMQ~~ | ~~Broker down não detectado por `/health`~~ | MassTransit `ConfigureHealthCheckOptions` com `MinimalFailureStatus = Unhealthy` | **P1** | **Resolvido** |
-| Sem `EnableRetryOnFailure` no EF Core | Transient DB errors → HTTP 500 | Configurar retry no Npgsql | **P2** | Aberto |
-| `activeRevisionsMode: 'Single'` | Deploy sem zero-downtime | Mudar para `Multiple` com traffic splitting | **P2** | Aberto |
-| ~~Sem scaling rules nos Container Apps~~ | ~~Não escala sob carga~~ | HTTP scaling rules configuradas por perfil de serviço. Ver [ADR-011](adr/011-container-apps-scaling.md) | **P2** | **Resolvido** |
+| `AllowAllAzureIps` no PostgreSQL | Qualquer serviço Azure pode tentar conexão | Private endpoint + VNet injection | P2 | Aberto |
+| RabbitMQ single-replica em LRS | SPOF na mensageria | Azure Service Bus ou ZRS | P2 | Aberto |
+| ACR Basic (sem geo-replicação) | Image pull falha se região cair | Upgrade para Premium | P2 | Aberto |
+| `activeRevisionsMode: Single` | Deploy sem zero-downtime | Mudar para Multiple + traffic splitting | P2 | Aberto |
+| Sem VNet injection | Comunicação exposta | VNet dedicada | P2 | Aberto |
 
 ### Operacional
 
 | Gap | Risco | Ação | Prioridade |
 |---|---|---|---|
-| Alertas apenas por email | Resposta lenta fora de horário | Integrar PagerDuty/OpsGenie | **P1** |
-| Sem rotação de on-call | Burnout, single point of failure humano | Definir escala de plantão | **P1** |
-| Log Analytics retenção padrão (30 dias) | Perda de logs para auditoria | Configurar 90+ dias | **P2** |
-| Sem teste de DR automatizado | Validação manual, propensa a erro | Script de teste mensal no CI | **P3** |
+| Alertas apenas por email | Resposta lenta fora de horário | Integrar PagerDuty/OpsGenie | P1 |
+| Log Analytics sem daily cap | Custo descontrolado (histórico: 93.6% do custo total) | Manter `dailyQuotaGb: 1` + sampling 10% | P1 |
+| Sem rotação automática de secrets | Risco de credenciais expostas | Migrar para Azure Key Vault | P2 |
+| Retenção de logs padrão (30 dias) | Perda de logs para auditoria | Configurar 90+ dias | P2 |
+| Teste de DR apenas manual | Validação propensa a erro | Script de teste mensal automatizado no CI | P3 |
 
----
-
-> **Referência:** Para a arquitetura detalhada, ADRs e diagramas C4, consulte [`architecture.md`](architecture.md) e [`adr/`](adr/).
+> Referência: para arquitetura detalhada, ADRs e diagramas C4, consulte [`architecture.md`](architecture.md).

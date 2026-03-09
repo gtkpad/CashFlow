@@ -4,64 +4,63 @@
 |---|---|
 | **Status** | Aceito |
 | **Data** | Março 2026 |
-| **Contexto** | O sistema processa dados financeiros (transações e saldos) que exigem proteção em repouso e em trânsito. A infraestrutura atual utiliza Azure Managed Services com configurações de segurança padrão. |
+| **Contexto** | O sistema processa dados financeiros (lançamentos e saldos) que exigem proteção em repouso e em trânsito. A infraestrutura utiliza Azure Managed Services com configurações de segurança padrão. |
 | **Decisão** | Utilizar encryption gerenciada pelo Azure (at rest e in transit) com roadmap para Private Endpoints e VNet isolation. |
 
 ## Detalhes
 
 ### Encryption at Rest
 
+Habilitada por padrão em todos os serviços Azure utilizados. Não requer configuração explícita.
+
 | Componente | Mecanismo | Gestão de Chaves |
 |---|---|---|
-| PostgreSQL Flexible Server | AES-256 (Transparent Data Encryption) | Azure-managed (service-managed keys) |
+| PostgreSQL Flexible Server | AES-256 (TDE) | Azure-managed |
 | Azure Container Registry | AES-256 | Azure-managed |
 | Log Analytics Workspace | AES-256 | Azure-managed |
-
-> **Nota:** Encryption at rest é habilitada por padrão em todos os serviços Azure utilizados. Não requer configuração explícita.
 
 ### Encryption in Transit
 
 | Caminho | Protocolo | Configuração |
 |---|---|---|
-| Cliente → Gateway | TLS 1.2+ | Gerenciado pelo Azure Container Apps ingress |
-| Gateway → Serviços internos | TLS 1.2+ | Container Apps internal communication |
+| Cliente → Gateway | TLS 1.2+ | Gerenciado pelo ACA ingress |
+| Gateway → Serviços internos | TLS 1.2+ | ACA internal networking |
 | Serviços → PostgreSQL | TLS 1.2+ | `Ssl Mode=Require` na connection string |
-| Serviços → RabbitMQ | AMQP sobre TLS | Gerenciado pelo Azure Container Apps |
+| Serviços → RabbitMQ | AMQP/TLS | ACA internal networking |
 
-### Networking Atual
+### Networking atual e limitações
 
+```mermaid
+graph TD
+    Internet --> ACA_IN["ACA Ingress\n(TLS termination)"]
+    ACA_IN --> GW["Gateway (YARP)"]
+    GW -->|"ACA internal"| SVC["Serviços internos"]
+    SVC -->|"AllowAllAzureIps"| PG["PostgreSQL Flexible Server"]
 ```
-Internet → [Azure Container Apps Ingress (TLS termination)]
-                    ↓
-            Gateway (YARP) → Internal Services (Container Apps internal networking)
-                    ↓
-            PostgreSQL Flexible Server (AllowAllAzureIps firewall rule)
-```
 
-**Limitação atual:** A firewall rule `AllowAllAzureIps` permite que qualquer serviço na mesma região Azure acesse o PostgreSQL. Embora o acesso requer credenciais válidas, não atende ao princípio de least privilege em networking.
+**Limitação:** A firewall rule `AllowAllAzureIps` permite que qualquer serviço Azure na mesma região acesse o PostgreSQL. Embora exija credenciais válidas, não atende ao princípio de least privilege em networking.
 
-### Roadmap: Private Endpoints + VNet
+### Secrets
+
+| Secret | Armazenamento atual | Status |
+|---|---|---|
+| PostgreSQL connection strings | ACA secrets (via `azd`) | Manual |
+| RabbitMQ connection string | ACA secrets (via `azd`) | Manual |
+| JWT signing key | ACA secrets (via `azd`) | Manual |
+| Gateway shared secret | ACA secrets (via `azd`) | Manual |
+
+### Roadmap de segurança de rede
 
 | Fase | Ação | Benefício |
 |---|---|---|
-| **Curto prazo** | Documentar configuração atual (esta ADR) | Visibilidade do estado de segurança |
-| **Médio prazo** | VNet injection para Container Apps Environment | Isolamento de rede entre serviços e internet |
-| **Médio prazo** | Private Endpoint para PostgreSQL | Elimina `AllowAllAzureIps`, tráfego exclusivo via VNet |
-| **Longo prazo** | Private Endpoint para Azure Container Registry | Pull de imagens via rede privada |
-
-### Credenciais e Secrets
-
-| Secret | Armazenamento | Rotação |
-|---|---|---|
-| PostgreSQL connection string | Azure Container Apps secrets (via `azd`) | Manual (roadmap: Key Vault) |
-| RabbitMQ connection string | Azure Container Apps secrets (via `azd`) | Manual |
-| JWT signing key | Azure Container Apps secrets (via `azd`) | Manual |
-| Gateway shared secret | Azure Container Apps secrets (via `azd`) | Manual |
-
-> **Roadmap:** Migrar secrets para Azure Key Vault com rotação automática.
+| Médio prazo | VNet injection para ACA Environment | Isolamento de rede entre serviços e internet |
+| Médio prazo | Private Endpoint para PostgreSQL | Elimina `AllowAllAzureIps`, tráfego via VNet |
+| Médio prazo | Migrar secrets para Azure Key Vault | Rotação automática, auditoria de acesso |
+| Longo prazo | Private Endpoint para ACR | Pull de imagens via rede privada |
 
 ## Consequências
 
-- A configuração atual atende requisitos de compliance para dados financeiros não-PCI (encryption at rest + in transit).
-- O `AllowAllAzureIps` é um gap de segurança de rede documentado, mitigado por autenticação no banco.
-- A migração para Private Endpoints requer VNet injection no Container Apps Environment, o que pode impactar custos (~$0.09/hora para VNet integration).
+- A configuração atual atende requisitos de compliance básicos para dados financeiros não-PCI (encryption at rest + in transit).
+- `AllowAllAzureIps` é um gap de segurança de rede documentado, mitigado por autenticação obrigatória no banco.
+- VNet injection no ACA Environment tem custo de ~$0.09/hora — avaliar custo-benefício.
+- A migração para Private Endpoints requer VNet injection primeiro, pois os Container Apps precisam estar na VNet para alcançar o Private Endpoint do PostgreSQL.
