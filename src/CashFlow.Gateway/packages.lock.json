@@ -22,6 +22,12 @@
           "Yarp.ReverseProxy": "2.3.0"
         }
       },
+      "Roslynator.Analyzers": {
+        "type": "Direct",
+        "requested": "[4.13.1, )",
+        "resolved": "4.13.1",
+        "contentHash": "KZpLy6ZlCebMk+d/3I5KU2R7AOb4LNJ6tPJqPtvFXmO8bEBHQvCIAvJOnY2tu4C9/aVOROTDYUFADxFqw1gh/g=="
+      },
       "Yarp.ReverseProxy": {
         "type": "Direct",
         "requested": "[2.3.0, )",
@@ -247,10 +253,17 @@
         "resolved": "8.0.1",
         "contentHash": "BVYuec3jV23EMRDeR7Dr1/qhx7369dZzJ9IWy2xylvb4YfXsrUxspWc4UWYid/tj4zZK58uGZqn2WQiaDMhmAg=="
       },
+      "cashflow.domain": {
+        "type": "Project",
+        "dependencies": {
+          "Roslynator.Analyzers": "[4.13.1, )"
+        }
+      },
       "cashflow.servicedefaults": {
         "type": "Project",
         "dependencies": {
           "Azure.Monitor.OpenTelemetry.AspNetCore": "[1.4.0, )",
+          "CashFlow.Domain": "[1.0.0, )",
           "Microsoft.Extensions.Http.Resilience": "[10.3.0, )",
           "Microsoft.Extensions.ServiceDiscovery": "[10.3.0, )",
           "Npgsql": "[10.0.0, )",
@@ -259,7 +272,8 @@
           "OpenTelemetry.Instrumentation.AspNetCore": "[1.14.0, )",
           "OpenTelemetry.Instrumentation.EntityFrameworkCore": "[1.14.0-beta.1, )",
           "OpenTelemetry.Instrumentation.Http": "[1.14.0, )",
-          "OpenTelemetry.Instrumentation.Runtime": "[1.14.0, )"
+          "OpenTelemetry.Instrumentation.Runtime": "[1.14.0, )",
+          "Roslynator.Analyzers": "[4.13.1, )"
         }
       },
       "Azure.Monitor.OpenTelemetry.AspNetCore": {

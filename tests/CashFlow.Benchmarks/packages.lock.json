@@ -20,6 +20,12 @@
           "System.Management": "5.0.0"
         }
       },
+      "Roslynator.Analyzers": {
+        "type": "Direct",
+        "requested": "[4.13.1, )",
+        "resolved": "4.13.1",
+        "contentHash": "KZpLy6ZlCebMk+d/3I5KU2R7AOb4LNJ6tPJqPtvFXmO8bEBHQvCIAvJOnY2tu4C9/aVOROTDYUFADxFqw1gh/g=="
+      },
       "BenchmarkDotNet.Annotations": {
         "type": "Transitive",
         "resolved": "0.14.0",
@@ -177,7 +183,10 @@
         }
       },
       "cashflow.domain": {
-        "type": "Project"
+        "type": "Project",
+        "dependencies": {
+          "Roslynator.Analyzers": "[4.13.1, )"
+        }
       }
     }
   }

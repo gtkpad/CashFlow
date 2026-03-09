@@ -6,4 +6,8 @@
         <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
         <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
     </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Roslynator.Analyzers" />
+    </ItemGroup>
 </Project>

@@ -75,6 +75,12 @@
           "Microsoft.TestPlatform.TestHost": "17.14.1"
         }
       },
+      "Roslynator.Analyzers": {
+        "type": "Direct",
+        "requested": "[4.13.1, )",
+        "resolved": "4.13.1",
+        "contentHash": "KZpLy6ZlCebMk+d/3I5KU2R7AOb4LNJ6tPJqPtvFXmO8bEBHQvCIAvJOnY2tu4C9/aVOROTDYUFADxFqw1gh/g=="
+      },
       "xunit": {
         "type": "Direct",
         "requested": "[2.9.3, )",
@@ -1250,7 +1256,8 @@
           "Aspire.Hosting.Azure.AppContainers": "[13.1.2, )",
           "Aspire.Hosting.Azure.PostgreSQL": "[13.1.2, )",
           "Aspire.Hosting.Orchestration.osx-arm64": "[13.1.1, )",
-          "Aspire.Hosting.RabbitMQ": "[13.1.2, )"
+          "Aspire.Hosting.RabbitMQ": "[13.1.2, )",
+          "Roslynator.Analyzers": "[4.13.1, )"
         }
       },
       "Aspire.Hosting.Azure.AppContainers": {

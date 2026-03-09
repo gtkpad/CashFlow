@@ -109,6 +109,12 @@
         "resolved": "7.0.0",
         "contentHash": "AyWlducZGOnmlEVz4PaL3Qv8wcY3ClPZS9CrlDnSVahGd/E9tTEgSFiC8yoV/F6o6P6IYm8xnHFa/vmWT8tfcw=="
       },
+      "Roslynator.Analyzers": {
+        "type": "Direct",
+        "requested": "[4.13.1, )",
+        "resolved": "4.13.1",
+        "contentHash": "KZpLy6ZlCebMk+d/3I5KU2R7AOb4LNJ6tPJqPtvFXmO8bEBHQvCIAvJOnY2tu4C9/aVOROTDYUFADxFqw1gh/g=="
+      },
       "Testcontainers.PostgreSql": {
         "type": "Direct",
         "requested": "[4.10.0, )",
@@ -1132,16 +1138,21 @@
           "Microsoft.AspNetCore.OpenApi": "[10.0.3, )",
           "Microsoft.EntityFrameworkCore": "[10.0.3, )",
           "Microsoft.EntityFrameworkCore.Relational": "[10.0.3, )",
-          "Npgsql.EntityFrameworkCore.PostgreSQL": "[10.0.0, )"
+          "Npgsql.EntityFrameworkCore.PostgreSQL": "[10.0.0, )",
+          "Roslynator.Analyzers": "[4.13.1, )"
         }
       },
       "cashflow.domain": {
-        "type": "Project"
+        "type": "Project",
+        "dependencies": {
+          "Roslynator.Analyzers": "[4.13.1, )"
+        }
       },
       "cashflow.servicedefaults": {
         "type": "Project",
         "dependencies": {
           "Azure.Monitor.OpenTelemetry.AspNetCore": "[1.4.0, )",
+          "CashFlow.Domain": "[1.0.0, )",
           "Microsoft.Extensions.Http.Resilience": "[10.3.0, )",
           "Microsoft.Extensions.ServiceDiscovery": "[10.3.0, )",
           "Npgsql": "[10.0.0, )",
@@ -1150,7 +1161,8 @@
           "OpenTelemetry.Instrumentation.AspNetCore": "[1.14.0, )",
           "OpenTelemetry.Instrumentation.EntityFrameworkCore": "[1.14.0-beta.1, )",
           "OpenTelemetry.Instrumentation.Http": "[1.14.0, )",
-          "OpenTelemetry.Instrumentation.Runtime": "[1.14.0, )"
+          "OpenTelemetry.Instrumentation.Runtime": "[1.14.0, )",
+          "Roslynator.Analyzers": "[4.13.1, )"
         }
       },
       "cashflow.transactions.api": {
@@ -1170,7 +1182,8 @@
           "Microsoft.AspNetCore.OpenApi": "[10.0.3, )",
           "Microsoft.EntityFrameworkCore": "[10.0.3, )",
           "Microsoft.EntityFrameworkCore.Relational": "[10.0.3, )",
-          "Npgsql.EntityFrameworkCore.PostgreSQL": "[10.0.0, )"
+          "Npgsql.EntityFrameworkCore.PostgreSQL": "[10.0.0, )",
+          "Roslynator.Analyzers": "[4.13.1, )"
         }
       },
       "Asp.Versioning.Http": {
