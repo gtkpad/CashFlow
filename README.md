@@ -128,27 +128,39 @@ CashFlow.slnx
 | [Docker](https://www.docker.com/) | 20.10+ | PostgreSQL, RabbitMQ (via Aspire) e Testcontainers |
 | [k6](https://k6.io/) *(opcional)* | — | Testes de carga |
 
+> **Nota:** O `global.json` na raiz pina a versão mínima do SDK em `10.0.102`. Verifique com `dotnet --version` antes de prosseguir.
+
+Após instalar o .NET 10 SDK, instale o workload do Aspire (necessário na primeira instalação):
+
+```bash
+dotnet workload install aspire
+```
+
 ---
 
 ## Como Executar
 
 ```bash
 # Clone o repositório
-git clone https://github.com/gabrielvp/cashflow.git
-cd cashflow
+git clone https://github.com/gtkpad/CashFlow.git
+cd CashFlow
 
-# Primeira instalação: configure o secret do Gateway via user-secrets
+# Configure os git hooks (garante dotnet format antes de cada commit)
+bash .githooks/setup.sh
+
+# Primeira instalação: configure os secrets via user-secrets
 cd src/CashFlow.AppHost
 dotnet user-secrets set "Parameters:gateway-secret" "cashflow-dev-gateway-secret-2026"
+dotnet user-secrets set "Parameters:jwt-signing-key" "cashflow-dev-jwt-signing-key-2026-super-secret"
 cd ../..
 
 # Execute o AppHost (inicia todos os serviços + infraestrutura)
 dotnet run --project src/CashFlow.AppHost
 ```
 
-> **Nota:** O comando `dotnet user-secrets set` precisa ser executado apenas uma vez por máquina. O secret é armazenado de forma segura no perfil do usuário e não é commitado no repositório.
+> **Nota:** Os comandos `dotnet user-secrets set` precisam ser executados apenas uma vez por máquina. Os secrets são armazenados de forma segura no perfil do usuário e não são commitados no repositório.
 
-O **.NET Aspire Dashboard** será aberto automaticamente no navegador, exibindo todos os serviços, logs, traces e métricas.
+Após iniciar, o Aspire exibirá no console a URL do Dashboard (ex: `http://localhost:15020`). Acesse essa URL no navegador para visualizar todos os serviços, logs, traces e métricas. Em alguns ambientes (Rider/Visual Studio) o browser abre automaticamente.
 
 Todos os recursos são provisionados automaticamente:
 - **PostgreSQL** — 3 databases (identity-db, transactions-db, consolidation-db)
@@ -156,6 +168,12 @@ Todos os recursos são provisionados automaticamente:
 - **4 APIs** — Gateway, Identity, Transactions, Consolidation
 
 > **Nota:** As migrations do Entity Framework Core são executadas automaticamente na inicialização de cada serviço.
+
+Para verificar se todos os serviços subiram corretamente, confirme que todos aparecem como **Running** no Dashboard ou valide via health check (substitua a porta exibida no console):
+
+```bash
+curl http://localhost:<GATEWAY_PORT>/health
+```
 
 ---
 
